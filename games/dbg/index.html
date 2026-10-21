@@ -1,0 +1,2511 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" href="data:,"><title>DBG合作吃墩</title><style>/* 合作打怪 · 界面样式
+   规则：色相只属于花色。红黄蓝绿黑五色留给牌，其余界面一律纸与墨。
+   强调靠反白、实心墨块和印章，不引入第六种颜色。 */
+
+/* ── 变量 ───────────────────────────────────────────── */
+:root{
+  --paper:#E3E1D6;        /* 页面纸底 */
+  --paper-2:#ECEAE0;      /* 面板 */
+  --card:#F8F6EE;         /* 牌面纸 */
+  --ink:#15181B;          /* 墨 */
+  --ink-2:#474D51;        /* 次级文字 */
+  --ink-3:#5C6165;        /* 弱化文字，对比度 ≥4.5 */
+  --rule:#B4AF9E;         /* 细线 */
+  --rule-2:#D6D2C5;       /* 更淡的细线／压印投影 */
+  --block:#16191C;        /* 桌面墨版 */
+  --on-block:#E8E6DC;     /* 墨版上的字 */
+  --on-block-2:#E8E6DC9e; /* 墨版上的次级字 */
+  --on-block-3:#E8E6DC91; /* 墨版上的弱化字，对比度 5.5 */
+  --on-block-line:#E8E6DC5c; /* 墨版上的细线与套准线，纯装饰不承载文字 */
+
+  --font-body:"PingFang SC","Microsoft YaHei",-apple-system,system-ui,sans-serif;
+  --font-display:"Songti SC","STSong","Noto Serif CJK SC",serif;
+  --font-num:Didot,"Bodoni 72","Songti SC",Georgia,serif;
+
+  --r-lg:6px; --r:3px; --r-sm:2px;
+  --ease:cubic-bezier(.2,0,0,1);
+
+  font-family:var(--font-body);
+  font-size:15px;
+  color:var(--ink);
+  background:var(--paper);
+}
+
+/* ── 基础 ───────────────────────────────────────────── */
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;
+  background:var(--paper);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+header,main{max-width:1280px;margin-inline:auto}
+main{padding:0 26px 40px}
+p{line-height:1.7;margin:8px 0;text-wrap:pretty}
+h1,h2,h3{text-wrap:balance}
+a{color:var(--ink)}
+small,.muted{color:var(--ink-3)}
+small{font-size:11px;line-height:1.55}
+[hidden]{display:none!important}
+
+h1{font-family:var(--font-display);font-size:21px;font-weight:600;letter-spacing:.16em;margin:0}
+h2{font-family:var(--font-display);font-size:20px;font-weight:600;letter-spacing:.04em;margin:0 0 14px}
+h3{font-size:14px;font-weight:600;letter-spacing:.02em;margin:0 0 8px}
+.eyebrow{font-size:10px;letter-spacing:.24em;color:var(--ink-3);margin:0 0 6px}
+
+/* ── 报头 ───────────────────────────────────────────── */
+header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:20px 26px 13px;
+  border-bottom:2px solid var(--ink);
+  margin-bottom:14px;
+}
+.brand-mark{display:inline!important;font-size:15px!important;color:var(--ink)!important;margin:0 7px 0 0!important;vertical-align:.08em}
+#reset{min-height:32px;padding:6px 12px;font-size:11px;letter-spacing:.08em;border-color:var(--rule);color:var(--ink-3)}
+#reset:hover:not(:disabled){background:var(--ink);border-color:var(--ink);color:var(--card)}
+
+/* ── 控件 ───────────────────────────────────────────── */
+button,select,input{font:inherit}
+button{
+  border:1px solid var(--ink);border-radius:var(--r-sm);
+  background:transparent;color:var(--ink);
+  padding:9px 15px;min-height:38px;
+  letter-spacing:.04em;cursor:pointer;
+  transition-property:background-color,color,border-color,transform,box-shadow,opacity;
+  transition-duration:.14s;transition-timing-function:var(--ease);
+}
+/* 牌和座位有各自的悬停样式，排除在外，避免被通用规则盖掉 */
+button:not(.card):not(.seat-name):hover:not(:disabled){background:var(--ink);color:var(--card)}
+button:not(.card):active:not(:disabled){transform:scale(.96)}
+button.primary{background:var(--ink);color:var(--card)}
+button.primary:hover:not(:disabled){background:var(--ink-2);border-color:var(--ink-2)}
+button:disabled{opacity:.34;cursor:not-allowed}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+
+select{
+  appearance:none;padding:9px 32px 9px 13px;max-width:100%;
+  border:1px solid var(--ink);border-radius:var(--r-sm);
+  color:var(--ink);cursor:pointer;
+  background-color:var(--card);
+  background-image:linear-gradient(45deg,transparent 50%,var(--ink) 50%),linear-gradient(135deg,var(--ink) 50%,transparent 50%);
+  background-position:right 16px top 53%,right 11px top 53%;
+  background-size:5px 5px,5px 5px;
+  background-repeat:no-repeat;
+}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--ink)}
+
+label{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0;font-size:12px;color:var(--ink-2)}
+label.pick-label{flex-direction:column;align-items:stretch;gap:6px}
+.pick-label{font-size:10px;letter-spacing:.14em;color:var(--ink-3)}
+
+details{margin:10px 0}
+summary{cursor:pointer;font-size:12px;color:var(--ink-2);letter-spacing:.04em}
+summary::marker{color:var(--ink-3)}
+
+/* ── 版面骨架 ───────────────────────────────────────── */
+.panel{background:var(--paper-2);border:1px solid var(--rule);border-radius:var(--r);padding:20px;margin-bottom:14px}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.spread{justify-content:space-between}
+.scroll{max-height:400px;overflow:auto}
+
+/* 顶部数据条：横线夹出的一行，数字等宽防抖 */
+.stats{
+  display:flex;gap:26px;flex-wrap:wrap;align-items:baseline;
+  margin:0 0 12px;padding:9px 0;
+  border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);
+  font-size:11px;letter-spacing:.1em;color:var(--ink-3);
+}
+.stats b{font-family:var(--font-num);font-size:18px;color:var(--ink);margin:0 3px;font-variant-numeric:tabular-nums}
+
+/* ── 关卡节点 ───────────────────────────────────────── */
+.nodes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.node{
+  background:var(--paper-2);border:1px solid var(--rule);
+  border-left:3px solid var(--rule);border-radius:var(--r-sm);padding:12px 14px;
+}
+.node.current{border-left-color:var(--ink);background:var(--card)}
+.node small{display:block;font-size:10px;letter-spacing:.1em;color:var(--ink-3)}
+.node h3{font-family:var(--font-display);font-size:16px;margin:5px 0 6px}
+.future-nodes{margin:0 0 12px}
+.future-nodes>.nodes{margin-top:10px}
+
+/* ── 怪物票 ─────────────────────────────────────────── */
+/* 票面到内容为止，不跟着桌面拉高，免得框住一大块空白 */
+.monster-panel{grid-column:2;grid-row:1;margin:0;align-self:start;padding:18px}
+.monster-panel h2{font-size:29px;letter-spacing:.05em;margin:0}
+.monster-panel>.row.spread>span{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.monster-panel p.eyebrow{display:block;border:0;padding:0;text-indent:0}
+/* 标签／数值两栏的规格表。
+   用 inline-block 加悬挂缩进而不是 flex：flex 子项是块级盒，
+   innerText 会在标签和数值之间插入换行，测试取不到"标记点数 7"这类整行文本。 */
+.monster-panel p{
+  margin:0;padding:8px 0 8px 56px;text-indent:-56px;
+  border-top:1px solid var(--rule-2);
+  font-size:12px;line-height:1.6;
+}
+.monster-panel p>b{
+  display:inline-block;width:46px;margin-right:10px;text-indent:0;vertical-align:1px;
+  font-size:10px;font-weight:600;letter-spacing:.12em;color:var(--ink-3);
+}
+/* 没有标签的补充说明整段对齐到数值栏 */
+.monster-panel p:not(:has(b)){text-indent:0}
+.health{
+  height:9px;margin:11px 0 14px;
+  background:var(--paper);border:1px solid var(--rule);
+  overflow:hidden;
+}
+.health i{display:block;height:100%;background:var(--ink);transition:width .35s var(--ease)}
+.deck-count{
+  display:flex;gap:18px;margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--rule);font-size:11px;color:var(--ink-3);
+}
+.deck-count b{font-family:var(--font-num);font-size:16px;color:var(--ink);margin-left:5px;font-variant-numeric:tabular-nums}
+
+/* ── 战场：墨版桌面 + 怪物票 ────────────────────────── */
+.battlefield{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:16px;align-items:stretch;margin:0 0 14px}
+.table-wrap{grid-column:1;grid-row:1;margin:0;min-width:0;display:flex}
+.table-top{
+  position:relative;
+  display:grid;width:100%;
+  grid-template-columns:minmax(0,1fr) minmax(140px,.92fr) minmax(0,1fr);
+  grid-template-areas:". north ." "west center east" ". south .";
+  gap:12px 20px;padding:22px;
+  background:var(--block);color:var(--on-block);
+  border-radius:var(--r-lg);
+}
+/* 四角套准线：印版的定位记号 */
+.table-top::after{
+  content:"";position:absolute;inset:9px;pointer-events:none;
+  --t:var(--on-block-line);
+  background:
+    linear-gradient(var(--t),var(--t)) left 0 top 0/13px 1px no-repeat,
+    linear-gradient(var(--t),var(--t)) left 0 top 0/1px 13px no-repeat,
+    linear-gradient(var(--t),var(--t)) right 0 top 0/13px 1px no-repeat,
+    linear-gradient(var(--t),var(--t)) right 0 top 0/1px 13px no-repeat,
+    linear-gradient(var(--t),var(--t)) left 0 bottom 0/13px 1px no-repeat,
+    linear-gradient(var(--t),var(--t)) left 0 bottom 0/1px 13px no-repeat,
+    linear-gradient(var(--t),var(--t)) right 0 bottom 0/13px 1px no-repeat,
+    linear-gradient(var(--t),var(--t)) right 0 bottom 0/1px 13px no-repeat;
+}
+
+.table-center{
+  grid-area:center;align-self:center;
+  display:grid;gap:5px;align-content:center;justify-items:center;
+  min-height:124px;padding:16px 10px;
+  border:1px dashed var(--on-block-line);border-radius:var(--r);
+  text-align:center;
+  transition-property:background-color,border-color,box-shadow;
+  transition-duration:.14s;transition-timing-function:var(--ease);
+}
+.table-center b{font-family:var(--font-display);font-size:19px;font-weight:500;letter-spacing:.08em}
+.table-center small{font-size:11px;color:var(--on-block-2)}
+.table-mark{font-size:20px;line-height:1;color:var(--on-block-line)}
+.drop-caption{font-size:10px;letter-spacing:.16em;color:var(--on-block-3)}
+/* 结算结果：命中盖实心，未中留空心 */
+.table-center .hit,.table-center .miss{
+  font-family:var(--font-display);font-size:12px;letter-spacing:.1em;
+  padding:5px 9px;margin-top:2px;
+}
+.table-center .hit{background:var(--on-block);color:var(--block);font-weight:600}
+.table-center .miss{border:1px solid var(--on-block-3);color:var(--on-block-2)}
+.table-center .hit small,.table-center .miss small{color:inherit;font-size:10px;letter-spacing:0}
+
+.seat-0{grid-area:south}
+.seat-1{grid-area:west}
+.seat-2{grid-area:north}
+.seat-3{grid-area:east}
+.table-seat{display:flex;flex-direction:column;gap:6px;min-width:0;max-width:216px;width:100%;justify-self:center}
+/* 南座在下方，牌靠近桌心 */
+.seat-0 .played{order:1}
+.seat-0 .seat-name{order:2}
+.seat-0 .seat-gear{order:3}
+
+.seat-name{
+  display:flex;align-items:center;gap:7px;
+  padding:6px 10px;min-height:34px;
+  background:transparent;color:var(--on-block);
+  border:1px solid var(--on-block-line);border-radius:var(--r-sm);
+}
+.seat-name:disabled{opacity:1;cursor:default}
+.seat-name .avatar{
+  width:20px;height:20px;flex:none;display:grid;place-items:center;
+  border:1px solid var(--on-block-line);border-radius:50%;
+  font-family:var(--font-num);font-size:12px;line-height:1;
+}
+.seat-name b{font-size:12px;font-weight:600}
+.seat-name small{margin-left:auto;font-size:10px;color:var(--on-block-2);font-variant-numeric:tabular-nums}
+/* 当前行动的座位整块反白 */
+.acting .seat-name{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.acting .seat-name small{color:var(--ink-3)}
+.acting .seat-name .avatar{border-color:var(--ink-3)}
+.seat-name.targetable{border-color:var(--on-block);cursor:pointer}
+.seat-name.targetable:hover{background:var(--on-block-3)}
+.table-seat.winner .seat-name{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.table-seat.winner .seat-name small{color:var(--ink-3)}
+
+.table-seat .played{
+  padding:8px 10px;min-height:76px;gap:3px;
+  border-radius:var(--r-sm);
+  box-shadow:0 1px 2px #0003,0 3px 8px #00000026;
+}
+.table-seat .played>small{font-size:10px;color:var(--ink-3)}
+.table-seat .played strong{font-size:23px}
+.table-seat .played .desc{font-size:10px;line-height:1.5}
+.table-seat .played:has(.waiting){background:transparent;border:1px dashed var(--on-block-line);box-shadow:none}
+.table-seat .waiting{font-size:11px;color:var(--on-block-3);text-align:center;margin:auto}
+/* 获胜的牌在墨版上镶一圈纸白 */
+.table-seat .played.winner{box-shadow:0 0 0 2px var(--paper),0 3px 8px #00000026}
+
+.seat-gear{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;font-size:10px}
+.seat-gear details{margin:0}
+.seat-gear summary{font-size:10px;color:var(--on-block-2)}
+.seat-gear small{color:var(--on-block-2)}
+.seat-gear p{
+  position:relative;z-index:3;max-width:206px;margin:5px 0 0;
+  padding:8px 9px;background:var(--card);color:var(--ink);
+  border-radius:var(--r-sm);font-size:11px;line-height:1.6;
+  box-shadow:0 2px 6px #00000038;
+}
+
+/* ── 牌 ─────────────────────────────────────────────── */
+.red{--suit:#A8342B}
+.yellow{--suit:#7C5D0F}
+.blue{--suit:#27558C}
+.green{--suit:#1D6A4A}
+.black{--suit:#1B1E22}
+
+.card{
+  position:relative;isolation:isolate;overflow:hidden;
+  display:flex;flex-direction:column;gap:6px;
+  padding:13px 13px 24px;
+  background:var(--card);color:var(--ink);
+  border:1px solid var(--rule);border-radius:var(--r);
+  text-align:left;min-height:220px;
+  box-shadow:2px 2px 0 var(--rule-2);
+  transition-property:transform,box-shadow,border-color,background-color,filter,opacity;
+  transition-duration:.16s;transition-timing-function:var(--ease);
+}
+.hand .card,.pick-group .card{flex:0 0 152px;min-width:152px}
+.card .number{
+  font-family:var(--font-num);font-size:30px;line-height:1.05;
+  color:var(--suit);font-variant-numeric:tabular-nums;
+}
+/* 花色作水印填满中段，没有能力文字的牌也不空 */
+.suit-emblem{
+  position:absolute;z-index:-1;right:-10px;top:50%;transform:translateY(-50%);
+  font-family:Georgia,serif;font-size:104px;line-height:1;
+  color:var(--suit);opacity:.1;pointer-events:none;
+}
+.card .desc{
+  margin-top:auto;padding-top:8px;
+  border-top:1px solid var(--rule-2);
+  font-size:11.5px;line-height:1.6;color:var(--ink-2);
+}
+.card .desc:empty{display:none}
+.card-corner{
+  position:absolute;bottom:7px;right:11px;transform:rotate(180deg);
+  font-family:var(--font-num);font-size:13px;color:var(--suit);opacity:.7;
+}
+.card-flag{
+  position:absolute;z-index:2;top:8px;right:8px;
+  padding:3px 6px;border-radius:var(--r-sm);
+  background:var(--ink);color:var(--card);
+  font-size:10px;line-height:1;letter-spacing:.06em;
+}
+button.card:hover:not(:disabled){
+  background:#FFFDF5;color:var(--ink);
+  transform:translateY(-6px);border-color:var(--suit);
+  box-shadow:2px 8px 0 var(--rule-2),0 10px 18px #15181b24;
+}
+button.card:active:not(:disabled){transform:translateY(-3px)}
+/* 选中态要压过悬停态，所以特指度提高一级 */
+button.card.selected,button.card.picked,button.card[aria-pressed="true"]{
+  background:#FFFDF5;
+  border-color:var(--ink);
+  transform:translateY(-8px);
+  box-shadow:0 0 0 2px var(--ink),2px 10px 0 #15181b1f;
+}
+/* 当前跟不了的牌：褪色下沉，原因写在角标上 */
+.hand .card.needs-adjustment:not(.selected){filter:grayscale(.82);opacity:.52;transform:translateY(7px)}
+.hand .card.needs-adjustment:not(.selected):hover:not(:disabled){filter:grayscale(.3);opacity:.92;transform:translateY(0)}
+.card:disabled,.hand .card:disabled{opacity:1;cursor:default}
+
+.hand{
+  display:flex;gap:11px;align-items:stretch;
+  justify-content:safe center;
+  margin:0;padding:14px 4px 16px;
+  overflow-x:auto;min-width:0;
+  scrollbar-color:var(--rule) transparent;
+}
+.hand-panel{padding:16px 20px}
+.hand-panel>.row>h2{font-size:17px;margin:0}
+.hand-panel h2 small{margin-left:9px;font-size:11px;font-weight:400;color:var(--ink-3);letter-spacing:.06em}
+button[data-hand-scroll]{width:40px;min-width:40px;height:40px;padding:0;font-size:17px;line-height:1}
+.hand-panel:has(.choices) [data-hand-scroll]{display:none}
+
+/* ── 出牌控制与结算问询 ─────────────────────────────── */
+.controls{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:15px 16px;margin-top:12px}
+.controls>b{font-size:13px;letter-spacing:.02em}
+.idle-controls{display:flex;align-items:center;gap:16px}
+.idle-controls p{margin:0;font-size:12px}
+#playHint{font-size:12px;color:var(--ink-2);margin:10px 0}
+.choices{padding:4px 0 0}
+.choice-note{
+  margin:10px 0;padding:3px 0 3px 11px;
+  border-left:2px solid var(--ink);background:transparent;
+  font-size:12px;line-height:1.65;color:var(--ink-2);
+}
+.item-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;padding-top:8px}
+.item-actions button{font-size:12px;min-height:34px;padding:7px 12px}
+
+/* 点选组：选中即反白，唯一的例外是花色按钮本身代表花色 */
+.pick-group{display:flex;flex-wrap:wrap;gap:8px;margin:0;max-width:100%}
+.pick-group button:not(.card){font-size:12px;min-height:34px;padding:7px 12px}
+.pick-group .card{min-height:214px;margin:4px 0}
+.pick-group[data-field="choice-card"]{max-height:290px;overflow:auto;padding:8px 5px}
+.pick-group[data-field="delete-card"]{max-height:360px;overflow:auto}
+.picked:not(.card),[aria-pressed="true"]:not(.card){
+  background:var(--ink)!important;color:var(--card)!important;border-color:var(--ink)!important;
+}
+.suit-pick{border-color:var(--suit);color:var(--suit)}
+.suit-pick:hover:not(:disabled){background:var(--suit);color:var(--card)}
+.suit-pick.picked,.suit-pick[aria-pressed="true"]{background:var(--suit)!important;border-color:var(--suit)!important;color:var(--card)!important}
+
+/* ── 出牌记录 ───────────────────────────────────────── */
+.trick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0 0}
+.played{
+  display:flex;flex-direction:column;gap:5px;min-width:0;min-height:112px;
+  padding:11px;text-align:left;
+  background:var(--card);color:var(--ink);
+  border:1px solid var(--rule);border-top:2px solid var(--suit,var(--rule));
+  border-radius:var(--r-sm);
+}
+.played>small{font-size:10px;color:var(--ink-3);letter-spacing:.06em}
+.played strong{
+  margin:0;font-family:var(--font-num);font-size:25px;line-height:1.05;
+  color:var(--suit,var(--ink));font-variant-numeric:tabular-nums;
+}
+.played .desc{margin:0;font-size:11px;line-height:1.55;color:var(--ink-2)}
+.played .original{font-size:10px;color:var(--ink-3)}
+.played:has(>.muted){min-height:72px}
+.played:has(.desc:empty) .desc{display:none}
+.card-back{
+  flex:1;display:grid;place-items:center;align-content:center;gap:4px;padding:12px;
+  background:repeating-linear-gradient(45deg,var(--ink) 0 5px,#252B2F 5px 10px);
+  color:var(--paper);border-radius:var(--r-sm);text-align:center;
+}
+.card-back strong{color:var(--paper)!important;font-family:var(--font-display);font-size:13px;letter-spacing:.2em}
+.card-back small{color:#E8E6DC8f}
+
+/* 获胜印章 */
+.winner-label{
+  align-self:flex-start;margin-top:auto;
+  padding:5px 8px;
+  background:var(--ink);color:var(--card);
+  font-family:var(--font-display);font-size:11px;font-weight:600;
+  letter-spacing:.24em;text-indent:.24em;line-height:1;
+  box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--ink);
+  transform:rotate(-3.5deg);
+}
+.table-seat .winner-label{margin-top:6px}
+
+.result{
+  margin:0;padding:10px 12px;border-radius:var(--r-sm);
+  background:var(--ink);color:var(--paper);
+  font-size:12px;line-height:1.75;
+}
+.result small{color:#E8E6DCb3}
+.trick-record+.trick-record{margin-top:16px;padding-top:16px;border-top:1px solid var(--rule)}
+.played-history{margin-top:16px}
+.played-history>h3{font-size:11px;letter-spacing:.16em;color:var(--ink-3)}
+.earlier-tricks{margin-top:14px}
+
+/* 一个回合打完的判定面板 */
+.review-panel{border:1px solid var(--ink);border-left:4px solid var(--ink);background:var(--card)}
+.review-panel h3{font-family:var(--font-display);font-size:19px;margin:0 0 5px}
+.review-panel p{margin:0;font-size:12.5px;color:var(--ink-2)}
+.review-panel p small{color:var(--ink-3)}
+.review-panel .row{gap:18px}
+
+/* ── 采购 ───────────────────────────────────────────── */
+.deck-summary{
+  display:flex;flex-wrap:wrap;gap:7px 22px;align-items:baseline;
+  margin:4px 0 16px;padding:11px 0;
+  border-top:1px solid var(--rule-2);border-bottom:1px solid var(--rule-2);
+  font-size:12px;
+}
+.deck-summary>.pick-label{width:100%;margin-bottom:2px}
+.deck-suit b{font-family:var(--font-display);font-weight:600;color:var(--suit)}
+.deck-suit small{margin-left:5px;font-family:var(--font-num);font-size:12px;letter-spacing:.1em;color:var(--ink-3)}
+.deck-suit u{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;color:var(--ink)}
+.deck-summary>.muted{width:100%;margin-top:2px;font-size:11px}
+
+.market{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;padding:2px 0 18px}
+/* 高度交给网格行拉齐，不写死 min-height，短文案的卡就不会撑出空洞 */
+.product{
+  display:flex;flex-direction:column;gap:9px;min-width:0;
+  padding:15px;background:var(--paper-2);
+  border:1px solid var(--rule);border-radius:var(--r);
+}
+.product.card{background:var(--card);padding:15px 15px 15px;gap:9px}
+.product.card .number{font-size:31px}
+.product.card .suit-emblem{font-size:92px;right:-6px}
+.product.card .desc{margin:0;font-size:12.5px}
+.product.card .card-corner{display:none}
+.product h3{font-family:var(--font-display);font-size:17px;margin:2px 0 0}
+.product .desc{flex:1;font-size:12.5px;line-height:1.7;color:var(--ink-2)}
+.product .badge{
+  align-self:flex-start;padding:3px 7px;border-radius:0;
+  background:var(--ink);color:var(--card);
+  font-size:10px;letter-spacing:.16em;
+}
+.product.empty{
+  align-items:center;justify-content:center;text-align:center;
+  background:transparent;border-style:dashed;color:var(--ink-3);box-shadow:none;
+}
+/* 四个玩家按钮排成一行，不折行 */
+.product .pick-group{display:grid;grid-template-columns:repeat(auto-fit,minmax(44px,1fr));gap:5px}
+.product .pick-group button{padding:5px 6px;font-size:11px;min-height:30px}
+.product button[data-action="buy"]{margin-top:auto}
+.price{font-family:var(--font-num);font-size:19px;color:var(--ink)}
+
+.players{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:16px}
+.player{padding:11px 13px;background:var(--paper-2);border:1px solid var(--rule);border-radius:var(--r-sm)}
+.player h3{margin-bottom:0;font-size:13px}
+.player details{margin-bottom:0}
+.player p{font-size:12px}
+.token{font-size:11px;color:var(--ink-3)}
+.badge{display:inline-block;padding:3px 7px;border-radius:var(--r-sm);background:var(--rule-2);font-size:11px}
+
+/* ── 开局 ───────────────────────────────────────────── */
+.setup{
+  max-width:620px;margin:52px auto;padding:48px 44px 38px;
+  text-align:center;background:var(--paper-2);
+  border:1px solid var(--rule);border-radius:var(--r);
+  box-shadow:3px 3px 0 var(--rule-2);
+}
+.setup .opening-emblem{
+  margin:0 0 28px;font-family:Georgia,serif;font-size:34px;
+  letter-spacing:18px;text-indent:18px;color:var(--ink);line-height:1;
+}
+.opening-emblem span{color:var(--suit,var(--ink))}
+.setup .eyebrow{margin:0 0 16px}
+.setup h2{font-size:40px;line-height:1.35;margin:0 0 16px}
+.setup p{margin-bottom:16px}
+.setup label{justify-content:center;margin:26px 0}
+.setup button{min-width:172px}
+.how-to{margin:26px 0 0;padding-top:16px;border-top:1px solid var(--rule);text-align:left}
+.how-to summary{text-align:center;font-size:12px;letter-spacing:.08em;color:var(--ink-3)}
+.how-to p{margin:10px 0;font-size:12.5px;line-height:1.85;color:var(--ink-2)}
+
+/* 传屏／等待：整屏转墨，手牌自然藏起来 */
+.secret{
+  margin-top:14px;padding:30px;text-align:center;
+  background:var(--block);color:var(--on-block);
+  border:1px solid var(--block);border-radius:var(--r);
+}
+/* 只有交屏提示配得上整块墨；等电脑出牌只是一行状态 */
+.secret:not(:has(h3)){padding:15px;font-size:13px}
+.secret h3{font-family:var(--font-display);font-size:20px;color:var(--on-block);margin-bottom:16px}
+.secret button{border-color:var(--on-block-3);color:var(--on-block)}
+.secret button:hover:not(:disabled){background:var(--on-block);color:var(--block)}
+.secret button.primary{background:var(--on-block);color:var(--block);border-color:var(--on-block)}
+.secret button.primary:hover:not(:disabled){background:var(--paper);border-color:var(--paper)}
+.screen-end{padding:48px;text-align:center}
+.screen-end h2{font-size:30px}
+
+/* ── 拖拽与提示 ─────────────────────────────────────── */
+.hand [data-drag-card],[data-drag-choice]{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.hand [data-drag-card]:active,[data-drag-choice]:active{cursor:grabbing}
+.drop-ready{outline:1px dashed var(--on-block);outline-offset:2px}
+.drop-over{background:#E8E6DC1f!important;border-color:var(--on-block)!important;box-shadow:inset 0 0 0 1px var(--on-block)!important}
+.dragging{opacity:.25!important}
+.drag-ghost{
+  position:fixed!important;z-index:1000;pointer-events:none;
+  width:148px;min-height:212px;max-height:250px;
+  transform:rotate(-4deg)!important;
+  box-shadow:0 16px 30px #15181b59!important;opacity:.96;
+}
+#interaction-status{
+  position:fixed;z-index:40;bottom:18px;left:50%;transform:translateX(-50%);
+  max-width:90vw;padding:11px 18px;border-radius:var(--r-sm);
+  background:var(--ink);color:var(--paper);font-size:12px;
+  box-shadow:0 4px 16px #15181b40;pointer-events:none;
+}
+#interaction-status:empty{display:none}
+#error{
+  position:sticky;z-index:50;top:0;
+  max-width:1280px;margin-inline:auto;
+  padding:11px 26px;border-left:4px solid var(--ink);
+  background:var(--ink);color:#F0CEC9;font-size:13px;
+}
+
+/* ── 动效：只给落章这一刻 ───────────────────────────── */
+@keyframes stamp{
+  from{transform:rotate(-3.5deg) scale(1.55);opacity:0}
+  55%{opacity:1}
+  to{transform:rotate(-3.5deg) scale(1);opacity:1}
+}
+@keyframes rise{
+  from{transform:translateY(8px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+.table-seat .winner-label{animation:stamp .17s var(--ease) 60ms both}
+.table-center .hit,.table-center .miss{animation:rise .2s var(--ease) 120ms both}
+.review-panel{animation:rise .24s var(--ease) 200ms both}
+
+/* ── 窄屏 ───────────────────────────────────────────── */
+@media(max-width:1080px){
+  .battlefield{grid-template-columns:minmax(0,1fr) 248px;gap:12px}
+  .table-top{padding:16px;gap:10px 14px}
+  .market{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .seat-name .avatar{display:none}
+}
+@media(max-width:860px){
+  .battlefield{display:flex;flex-direction:column;gap:12px}
+  .monster-panel{padding:16px}
+  .monster-panel h2{font-size:25px}
+  .players{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:700px){
+  header,main{padding-left:14px;padding-right:14px}
+  header{padding-top:14px}
+  h1{font-size:17px;letter-spacing:.12em}
+  .stats{gap:14px;font-size:10px}
+  .stats b{font-size:16px}
+  .panel{padding:15px}
+  .nodes{grid-template-columns:1fr}
+  .table-top{
+    padding:12px;gap:8px 10px;border-radius:var(--r);
+    grid-template-columns:minmax(0,1fr) minmax(76px,.85fr) minmax(0,1fr);
+  }
+  .table-top::after{inset:5px}
+  .table-center{min-height:108px;padding:12px 6px}
+  .table-center b{font-size:17px}
+  /* 窄屏把名字和张数竖排，横排会把"玩家3"挤断行 */
+  .seat-name{flex-direction:column;align-items:center;gap:2px;padding:5px 4px}
+  .seat-name b{font-size:11px}
+  .seat-name small{margin:0;text-align:center}
+  .table-seat .played{padding:7px;min-height:66px}
+  .table-seat .played strong{font-size:21px}
+  .hand-panel{padding:14px 10px}
+  .hand{gap:9px}
+  .hand .card,.pick-group .card{flex-basis:144px;min-width:144px}
+  .pick-group .card{flex-basis:calc(50% - 8px);min-width:0;min-height:208px}
+  .idle-controls{display:block}
+  .idle-controls p{margin-top:6px}
+  .market{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .product{padding:12px;min-height:270px}
+  .trick{grid-template-columns:repeat(2,1fr);gap:8px}
+  .setup{margin:28px auto;padding:30px 20px}
+  .setup h2{font-size:29px}
+  .setup .opening-emblem{font-size:28px;letter-spacing:14px;text-indent:14px}
+  .setup label{flex-direction:column}
+  .deck-summary{gap:5px 14px;font-size:11.5px}
+  /* 出牌按钮跟随到屏幕底部 */
+  .hand-panel>.controls{position:sticky;bottom:8px;z-index:4;box-shadow:0 8px 24px #15181b2e}
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}
+}
+
+/* 手机横屏：桌面与操作并排，独立滚动，不缩放整页文字。 */
+@media (orientation:landscape) and (max-height:600px) and (max-width:1100px){
+  body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  header{height:46px;padding:3px 12px;margin-bottom:4px}
+  h1{font-size:16px;letter-spacing:.04em}
+  #reset{min-height:40px}
+  main{padding:0 10px 12px}
+  button,.pick-group button:not(.card),.item-actions button,.product .pick-group button{min-height:44px;touch-action:manipulation}
+  .row{gap:6px}
+  .stats{gap:12px;margin:0;padding:2px 0;font-size:10px;letter-spacing:0;min-height:28px}
+  .stats b{font-size:16px}
+  main:has(.battlefield){display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:6px;align-items:start}
+  main:has(.battlefield)>.stats{grid-column:1/-1}
+  main:has(.battlefield)>.future-nodes{grid-column:1/-1; margin:0}
+  .future-nodes summary{min-height:22px}
+  main:has(.battlefield)>.battlefield{grid-column:1;grid-row:3}
+  main:has(.battlefield)>.hand-panel,main:has(.battlefield)>.secret,main:has(.battlefield)>.review-panel{grid-column:2;grid-row:3}
+  main:has(.battlefield)>:not(.stats):not(.future-nodes):not(.battlefield):not(.hand-panel):not(.secret):not(.review-panel){grid-column:1/-1}
+  .battlefield{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:76px minmax(0,1fr);gap:5px;height:calc(100dvh - 116px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:240px}
+  .monster-panel{grid-column:1;grid-row:1;padding:6px 9px;width:100%;height:100%;overflow:auto;overscroll-behavior:contain}
+  .monster-panel h2{font-size:19px}
+  .monster-panel p.eyebrow{display:none}
+  .monster-panel p{padding-top:4px;padding-bottom:4px;font-size:12px}
+  .health{height:5px;margin:4px 0}
+  .deck-count{margin-top:4px;padding-top:4px}
+  .table-wrap{grid-column:1;grid-row:2;min-height:0}
+  .table-top{padding:5px;gap:3px 5px;grid-template-columns:minmax(0,1fr) minmax(80px,.85fr) minmax(0,1fr);grid-template-rows:44px minmax(68px,1fr) 44px;grid-template-areas:"north north north" "west center east" "south south south"}
+  .table-top::after{display:none}
+  .table-seat{gap:2px;max-width:none;min-height:0;align-self:center}
+  .seat-name{flex-direction:row;justify-content:center;padding:3px;gap:4px;min-height:44px}
+  .seat-name b{font-size:11px;white-space:nowrap}
+  .seat-name small{font-size:10px;margin:0}
+  .seat-name .avatar{display:none}
+  .seat-0,.seat-2{flex-direction:row;max-width:300px;height:44px}
+  .seat-0 .played,.seat-0 .seat-name{order:0}
+  .seat-0 .seat-name,.seat-2 .seat-name{flex:1}
+  .table-seat .played{min-height:0;padding:3px 5px;max-height:48px;overflow:auto;flex:1;box-shadow:none}
+  .table-seat .played strong{font-size:20px}
+  .table-seat .played>small{font-size:10px}
+  .table-seat .played .desc{font-size:11px;line-height:1.4}
+  .table-seat .winner-label{margin:2px;padding:3px;box-shadow:none}
+  .seat-gear{position:relative;gap:0}
+  .seat-gear:empty{display:none}
+  .seat-gear details[open] p{position:absolute;right:0;width:180px}
+  .table-center{min-height:60px;max-height:100%;padding:4px;gap:2px;overflow:auto}
+  .table-center b{font-size:14px;letter-spacing:0}
+  .table-mark,.drop-caption{display:none}
+  .table-center .hit,.table-center .miss{font-size:11px;padding:3px;margin:0}
+  .hand-panel,.review-panel,.secret{height:calc(100dvh - 116px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:240px;overflow:auto;overscroll-behavior:contain;margin:0;padding:7px}
+  .hand-panel>.row{position:sticky;top:-7px;z-index:5;background:var(--paper-2);padding:2px 0}
+  .hand-panel>.row>h2{font-size:13px}
+  .hand-panel h2 small{font-size:10px;margin-left:4px}
+  .hand-panel>.row button{padding:3px 8px;font-size:11px}
+  button[data-hand-scroll]{min-width:44px;width:44px}
+  .hand{justify-content:flex-start;gap:8px;padding:10px 3px 12px}
+  .hand .card,.pick-group .card{flex:0 0 118px;min-width:118px;min-height:142px;padding:8px 8px 19px}
+  .card .number{font-size:25px}
+  .card .desc{font-size:12px;line-height:1.45;padding-top:4px}
+  .card .suit-emblem{font-size:65px}
+  .hand-panel>.controls{position:sticky;bottom:-7px;z-index:4;max-height:65%;overflow:auto;margin-top:0;padding:8px;box-shadow:0 -3px 12px #15181b20}
+  .hand-panel:has(.choices)>.controls{position:static;max-height:none}
+  .controls>b{font-size:12px}
+  #playHint{margin:5px 0;font-size:11px}
+  .controls label{margin:5px 0}
+  .pick-group{gap:4px}
+  .pick-group[data-field="choice-card"],.pick-group[data-field="delete-card"]{flex-wrap:nowrap;max-height:none;overflow-x:auto;padding:10px 4px}
+  .review-panel .row{gap:8px}
+  .review-panel h3{font-size:17px}
+  .secret{display:flex;flex-direction:column;justify-content:center;padding:15px}
+  .market{display:flex;overflow-x:auto;gap:10px;scroll-snap-type:x proximity;padding:8px 3px 14px}
+  .product,.product.card{flex:0 0 210px;padding:12px;min-height:240px;scroll-snap-align:start}
+  .product .pick-group{grid-template-columns:repeat(2,minmax(44px,1fr))}
+  .setup{margin:8px auto;padding:14px 24px;max-width:620px}
+  .setup .opening-emblem{margin-bottom:8px;font-size:24px}
+  .setup h2{font-size:26px;margin-bottom:8px}
+  .setup .eyebrow,.setup p{margin-bottom:8px}
+  .setup label{margin:10px 0;flex-direction:row}
+  .how-to{margin-top:12px;padding-top:8px}
+  .drag-ghost{width:118px;min-height:142px;max-height:180px}
+  #interaction-status{bottom:6px;max-width:70vw;padding:7px 12px}
+}
+@media (orientation:landscape) and (max-height:600px) and (max-width:1100px){
+  header{height:42px}
+  main:has(.battlefield)>.future-nodes{grid-row:3}
+  main:has(.battlefield)>.battlefield,main:has(.battlefield)>.hand-panel,main:has(.battlefield)>.secret,main:has(.battlefield)>.review-panel{grid-row:2}
+  .battlefield,.hand-panel,.review-panel,.secret{height:calc(100dvh - 82px - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:293px}
+  .battlefield{grid-template-rows:100px minmax(0,1fr)}
+  .table-top{grid-template-rows:44px minmax(84px,1fr) 44px}
+  .seat-1 .played,.seat-3 .played{max-height:40px}
+}
+</style></head>
+<body><header><div><h1><span class="brand-mark" aria-hidden="true">✦</span> DBG合作吃墩</h1></div><button id="reset">重新开局</button></header>
+<div id="interaction-status" role="status" aria-live="polite"></div><div id="error" role="alert" hidden></div><main id="app"></main>
+<!-- 本地双击开发入口时，转到已内嵌模块的发行文件；HTTP开发服务保持原入口。 -->
+<script>
+if (location.protocol === 'file:' && location.pathname.endsWith('/demo/index.html')) {
+  location.replace(new URL('../发布/DBG合作吃墩.html', location.href).href);
+}
+</script>
+<script>(()=>{
+"use strict";
+const modules={};
+modules.m0=(()=>{
+// 十二关纸面配置：价格、数量、次数与新增效果均为首轮测试提案。
+// XLSX 和卡牌内容文档由 build_config.mjs 从这里生成。
+const suits = { red: "红", blue: "蓝", green: "绿", yellow: "黄", black: "黑" };
+
+const effect = (id, name, timing, text, tags, note) => ({ id, name, timing, text, tags, note });
+const abilities = [
+  effect("draw_one", "补给", "打出时", "摸1张牌。", "补牌／续航", "调度牌堆为空时不摸牌。"),
+  effect("cycle", "换牌", "打出时", "摸1张牌，弃1张牌。", "滤牌／缺门／信息", "未摸到牌也需弃牌；可放弃整个效果。"),
+  effect("draw_pass", "送牌", "打出时", "摸1张牌，然后传1张牌给另一名玩家。", "补牌／传牌／缺门", "先摸后选；没有摸到牌仍可传出原有手牌。"),
+  effect("draft_two", "分牌", "打出时", "摸2张牌，然后传1张牌给另一名玩家。", "补牌／分配／信息", "可传原有手牌或刚摸到的牌；没摸到牌也可传原有手牌。"),
+  effect("exchange", "交换", "打出时", "指定两名玩家，交换一张手牌。", "换手／缺门／信息", "可指定自己或其他玩家；两人须不同且均有手牌。双方各自选1张后同时暗中交换，发动者不能代选或偷看。"),
+  effect("discard_charge", "弃牌蓄力", "打出时", "弃1张牌，获得1层攻击力。", "弃牌／缺门／蓄势", "弃牌是费用；攻击力可叠加，本回合即可生效。未命中则保留，下一次造成伤害时消耗全部层数；本场结束清除。"),
+  effect("pass_charge", "传牌助攻", "回合结束时", "传1张牌给另一名玩家，使其获得1层攻击力。", "传牌／接力／蓄势", "传牌是费用；攻击力可叠加，保留至下一次造成伤害时消耗全部层数，本场结束清除；不要求打出收到的牌。"),
+  effect("adjust_self", "调点", "出牌前", "本牌点数可增加或减少1至3。", "调数／抢胜／让胜", "可不调整；有效点数限1–12，不改变出牌顺序。"),
+  effect("change_self", "变色", "出牌前", "本牌可变为任意普通花色。", "变色／命中／缺门", "先变色，再检查整个手牌是否必须跟牌；不得借此违法垫牌。"),
+  effect("mirror_self", "双点数", "出牌前", "可当作牌面上的任一点数打出。", "调数／1–6与7–12之间转换／奇偶", "先选择牌面上的一个点数，再应用其他调数。"),
+  effect("relay_self", "接力", "回合结束时", "将本牌交给另一名玩家，加入其手牌。", "传牌／复用／信息", "不进入已打出区；牌面已在本回合公开，接收者身份公开。"),
+  effect("prune_draw", "弃一摸二", "回合结束时", "弃1张牌，然后摸2张牌。", "弃牌／缺门／补牌", "必须先支付弃牌；调度牌不足时少摸，不补疲劳牌。"),
+  effect("recover_one", "捡牌", "回合结束时", "从弃牌区取1张牌，交给一名玩家。", "回收／分配／信息", "不能拿本回合或以前已打出的牌；取得牌面和接收者均公开。"),
+  effect("prepare_rank", "下回合调点", "回合结束时", "指定一名玩家，其下一回合出的牌点数可增加或减少1至3。", "调数／接力／准备", "获得公开下回合调点标记；下一回合结束到期，同名标记不叠加。"),
+  effect("prepare_suit", "下回合变色", "回合结束时", "指定一名玩家，其下一回合出的牌可变为任意普通花色。", "变色／接力／准备", "获得公开下回合变色标记；变色后检查跟牌，下一回合结束到期。"),
+  effect("distribute_three", "三人分牌", "打出时", "摸3张牌，留1张，其余2张分别传给另外两名玩家。", "补牌／分配／信息", "不足3张时先自留1张，余牌传给另一名玩家。")
+];
+
+// 主色建立构筑方向，副色保留跨色搭配。
+const variants = [
+  ["yellow",2,"green",9,3], ["blue",4,"green",7,3],
+  ["yellow",3,"red",10,4], ["yellow",6,"green",11,5],
+  ["yellow",5,"blue",8,4], ["red",2,"green",11,4],
+  ["red",6,"yellow",9,4], ["blue",4,"red",8,4],
+  ["green",6,"yellow",12,5], ["blue",3,"yellow",10,4],
+  ["green",4,"yellow",11,4], ["green",5,"red",11,4],
+  ["green",3,"yellow",8,5], ["blue",6,"red",7,4],
+  ["green",2,"blue",9,5], ["yellow",2,"blue",10,6]
+];
+const toolCards = abilities.flatMap((a, i) => {
+  const [s1, r1, s2, r2, price] = variants[i];
+  return [[s1,r1],[s2,r2]].map(([suit,rank], j) => ({
+    id:`CARD_${String(i+1).padStart(2,"0")}_${j+1}`, name:a.name,
+    suit, rank, ability:a.id, price, quantity:1,
+    ...(a.id==="mirror_self"?{text:`可当作 ${rank} 或 ${13-rank} 打出。`}:{})
+  }));
+});
+const colorRoles = [
+  ["红", "蓄力输出", "弃牌蓄力、传牌助攻、命中后补牌；用蓝色控胜负把攻击力兑现。"],
+  ["黄", "补牌分配", "摸牌、分牌、交换；把攻击牌和回收牌送到需要的人手里。"],
+  ["蓝", "调点控胜负", "调点、双点数、让出回合后补牌；协助低点命中和轮换攻击者。"],
+  ["绿", "回收复用", "接力、捡弃牌、回收此前已出牌、变色；精简牌库后反复调度关键牌。"]
+];
+const newAbilities = [
+  effect("charge_self","蓄力","打出时","获得1层攻击力。","蓄力／输出","可本回合消耗；未命中保留，本场结束清除。"),
+  effect("hit_draw","追击","回合结束时","若你本回合命中，摸2张牌。","输出／续航","只检查本牌打出者是否获胜且命中。"),
+  effect("yield_draw","让牌","回合结束时","若你未获胜，摸2张牌。","让胜／补牌","获胜但未命中不触发；调度牌不足则少摸。"),
+  effect("recover_spent","回收","回合结束时","从此前已出牌中取1张，交给一名玩家。","回收／复用／分配","不能选择本回合的牌；公开取牌和接收者。黑色王牌已移出本局，不能回收。")
+];
+newAbilities.push(
+  effect("pass_clockwise","轮传","打出时","所有玩家各选1张手牌，同时暗传给顺时针下一位玩家。","传牌／缺门／分配","每人自行选牌，全部选定后同时传出。空手玩家不传牌，但仍可接收；收到的牌不在本次效果中继续传递。"),
+  effect("low_self","压低","出牌前","本牌可当作1至6中的任一点数打出。","低点／让胜／奇偶","先选择点数，再应用其他调数；仍须跟色，不能替其他玩家改牌。"),
+  effect("pass_high","送高牌","打出时","传1张点数 ≥ 7 的手牌给另一名玩家，然后摸1张牌。","低点／缺门／传牌","可传原有手牌；没有高牌则不能发动。接收者仍须合法跟牌，传高牌不保证形成缺门。"),
+  effect("recover_low","捡低牌","回合结束时","从此前已出牌中取1张点数 ≤ 6 的牌，交给一名玩家。","低点／回收／接力","按印刷点数选择，不能拿本回合牌；没有符合条件的牌则不执行。")
+);
+abilities.push(...newAbilities);
+const expansion = [
+  ["charge_self","red",3,4],["charge_self","red",9,4],
+  ["hit_draw","red",6,4],["hit_draw","red",12,4],
+  ["yield_draw","blue",2,4],["yield_draw","blue",7,4],
+  ["recover_spent","green",1,6],["recover_spent","green",8,6],
+  ["draft_two","yellow",4,5],["draw_pass","yellow",9,4],
+  ["exchange","yellow",7,4],["distribute_three","yellow",12,6],
+  ["adjust_self","blue",5,4],["mirror_self","blue",1,4],
+  ["relay_self","green",6,4],["prune_draw","green",10,4],
+  ["low_self","blue",9,5],["low_self","green",10,5],
+  ["pass_high","yellow",2,4],["pass_high","blue",4,4],
+  ["recover_low","green",3,5],["recover_low","blue",5,5],
+  ["exchange","yellow",1,4],["change_self","green",5,5],
+  ["adjust_self","blue",2,4],["relay_self","green",2,4],
+  ["pass_clockwise","yellow",8,4],["pass_clockwise","green",7,4]
+].map(([ability,suit,rank,price],i)=>({id:`CARD_EXTRA_${i+1}`,name:abilities.find(a=>a.id===ability).name,suit,rank,ability,price,quantity:1,...(ability==="mirror_self"?{text:`可当作 ${rank} 或 ${13-rank} 打出。`}:{})}));
+// 初始牌特效：每色一张，不另起名字，牌面就是颜色点数加一行字。
+abilities.push(
+  effect("hit_bonus","基础牌","命中时","你用这张牌命中，伤害+1。","初始牌／输出","只加打出者自己的命中；仍须先满足怪物命中条件。"),
+  effect("gift_draw","基础牌","打出时","指定另一名玩家，他摸1张牌。","初始牌／补牌／分配","补的是别人不是自己；调度牌堆为空时不摸牌。"),
+  effect("adjust_two","基础牌","出牌前","本牌点数可增加或减少2。","初始牌／调数","可不调整；有效点数限1–12，可跨过6与7的分界。"),
+  effect("yield_relay","基础牌","回合结束时","若你本回合未获胜，可以把这张牌交给另一名玩家，加入其手牌。","初始牌／回收／接力","获胜则不发动；不能自留。牌面已公开，接收者身份公开。")
+);
+abilities.push(effect("forced_hit","黑色王牌","命中时","强制命中","一次性／王牌","可不跟色打出；黑色大于普通色，多张黑牌比较点数，同点先出者赢。黑牌领出时其余玩家可出任意色。获胜忽略命中门槛，仅获基础伤害，可叠加组件增伤；回合结束移出本局，不可回收，重试不返还。"));
+const cards = [...toolCards, ...expansion, {id:"CARD_BLACK_9",name:"黑色王牌",suit:"black",rank:9,ability:"forced_hit",text:"强制命中",price:4,quantity:2,exhaust:true}];
+const startingEffects = {
+  "red-12":"hit_bonus", "yellow-2":"gift_draw", "blue-5":"adjust_two", "green-8":"yield_relay"
+};
+const startingCards = ["red","blue","green","yellow"].flatMap(suit => [1,2,5,8,11,12].map(rank => {
+  const ability = startingEffects[`${suit}-${rank}`];
+  const spec = ability && abilities.find(a=>a.id===ability);
+  return {
+    id:`START_${suit.toUpperCase()}_${rank}`, name:"基础牌", suit, rank, quantity:1,
+    ability: ability || "none",
+    text: spec ? spec.text : "无额外效果。获胜后仍须满足怪物命中条件才能造成伤害。"
+  };
+}));
+
+const gear = (id,name,price,timing,frequency,text,tags,note) => ({id,name,price,timing,frequency,text,tags,note,quantity:1});
+const equipment = [
+  // A 组：碰骨架
+  gear("GEAR_ROPE","短绳",5,"出牌前","每场3次",
+    "你可以不跟色出牌；该牌本回合不能成为获胜牌。",
+    "免跟牌／垫色／多色追加","仍要按正常顺序出牌；该牌不能成为获胜牌，也不会成为跟牌花色。"),
+  gear("GEAR_MALLET","鼓槌",6,"出牌前","每场2次",
+    "轮到你出牌时可以延后，等其他人出完后你最后出牌。",
+    "顺位／信息／指定座次","你是首家时不能延后；一个回合最多一人延后。延后后仍须合法跟牌。"),
+  gear("GEAR_WHISTLE","哨子",6,"回合结束时","每场2次",
+    "你赢下本回合后，可以指定另一名玩家领出下一回合。",
+    "领出权／换人攻击／接力","只有回合赢家可用；被指定者成为下一回合首家，由他决定跟牌花色。"),
+  gear("GEAR_STANDARD","旗座",7,"出牌前","每场1次",
+    "你作为首家出牌时，可以额外指定一种花色作为本回合跟牌花色。你出的牌本回合不能成为获胜牌。",
+    "指挥／跟牌花色／多色追加","指定的花色成为本回合跟牌花色，其余三人按它跟牌；你的牌不能成为获胜牌。"),
+  // B 组：触发条件在别人身上
+  gear("GEAR_TUNEFORK","同调环",5,"命中时","每回合至多1次",
+    "本回合若有另一名玩家出的牌与获胜牌同色、点数相差正好1，伤害+2。",
+    "数字配合／辅助／输出","按结算时的有效花色和点数判断；持有者不必是赢家。"),
+  gear("GEAR_BATON","接力棒",6,"命中时","每回合至多1次",
+    "若本回合赢家在上一个回合接收过你传的牌，伤害+2。",
+    "喂牌／接力／输出","交换中交出的牌算传牌；只看紧邻的上一个回合。"),
+  gear("GEAR_DRUM","共鸣鼓",5,"命中时","每回合至多1次",
+    "若本回合赢家不是你，且你出的牌与获胜牌同色，伤害+1。",
+    "跟色支援／辅助／输出","按结算时的有效花色判断；可与小旗叠加。"),
+  gear("GEAR_CLOAK","双人斗篷",6,"出牌前","每场2次",
+    "你和另一名非首家玩家可在同一个回合都暗置出牌。你们两人之一获胜并命中时，伤害+2。",
+    "隐藏出牌／双人配合／输出","两人都不能是首家；暗置时各自锁定牌面与修改，四人出齐后一起揭开。"),
+  // C 组：一场之内成长
+  gear("GEAR_AXE","刻痕斧",5,"命中时","每场1次",
+    "把本回合打出的任意一张牌移出本局，本次伤害+1。",
+    "删牌／精简构筑／输出","移出的牌永久离开公共牌库，重试不返还；接力回手的牌不能选。"),
+  gear("GEAR_NOTES","猎人笔记",6,"命中时","翻面后持续",
+    "记录你命中时获胜牌的花色。集齐3种不同花色后翻面：此后你每次命中伤害+1。",
+    "多色输出／成长／翻面","黑色不计入；花色按结算时的有效花色记录，每场重置。"),
+  gear("GEAR_FLASK","蓄水壶",5,"回合结束时","每场1次",
+    "把你本回合打出的牌放到壶上，不进已打出区。之后任意回合结束时把它收回手牌，壶翻面失效。",
+    "存牌／调度／公开信息","壶上的牌全队可见；本场结束仍在壶上的牌回到公共牌库。"),
+  gear("GEAR_WATCH","秒表",6,"命中时","翻面后持续",
+    "你本场第一次命中时翻面。翻面后你每回合结束时摸1张牌。",
+    "续航／前期投资／翻面","翻面当回合即可摸牌；调度牌堆为空时不摸。"),
+  // D 组：带代价
+  gear("GEAR_CUP","空杯",2,"发牌时","持续",
+    "你每场少发1张手牌。你的每次命中伤害+1。",
+    "取舍／输出／续航","重试同样少发1张；手牌为0时全队战败的判定不变。"),
+  gear("GEAR_PLATE","重甲",4,"命中时","持续",
+    "你的每次命中伤害+2。你不能使用任何卡牌效果。",
+    "取舍／输出／白板","你打出的牌只剩花色和点数，出牌前、打出时、回合结束时和命中时的卡面效果一律不发动；装备和消耗品不受影响。"),
+  gear("GEAR_HAMMER","重锤",6,"命中时","每场2次",
+    "本次命中伤害+3，然后你弃2张手牌。",
+    "爆发／取舍／续航","先加伤害再付弃牌；手牌不足2张时按实际张数弃光。"),
+  gear("GEAR_DICE","赌徒骰",4,"出牌前","每场2次",
+    "宣告一个点数（1至12）作为你本牌的点数。本回合你获胜则伤害+2；未获胜则你弃1张手牌。",
+    "调数／下注／取舍","宣告后仍按该点数检查跟牌与获胜；未获胜的弃牌在回合结束时支付。"),
+  // E 组：信息
+  gear("GEAR_VEIL","面具",6,"出牌前／命中时","每场2次",
+    "非首家时，可暗置出牌，四人出齐后揭开。用此牌命中，伤害+2。",
+    "隐藏出牌／信息传递／输出","按出牌时状态检查合法性；调数、变色须在暗置时锁定，不得揭开后修改。"),
+  gear("GEAR_TUBE","传声筒",5,"回合结束时","每场2次",
+    "向一名玩家展示你手中的1张牌，由你选哪一张。",
+    "信息／编码／配合","只有你和对方知道牌面；展示不改变手牌，也不构成口头报牌。"),
+  gear("GEAR_SIGN","暗号板",5,"战斗开始时","每场1次",
+    "公开指定一名玩家。他本场第一次命中时伤害+2。",
+    "点名／团队目标／输出","发牌后立即使用；指定公开，本场不可更改。"),
+  gear("GEAR_SCOPE","单筒镜",5,"发牌后","每场1次",
+    "查看调度牌堆顶3张，按任意顺序放回。",
+    "牌序／规划／补牌配套","只看不拿；调度牌不足3张时看现有的。"),
+  gear("GEAR_SHELL","回声贝",6,"回合结束时","每场1次",
+    "复制本回合另一名玩家已结算的一个“回合结束时”能力，由你再结算一次。",
+    "复用／顺序博弈／配合","只能复制本回合已经结算过的回合结束能力；接力类复制时改为由你处理自己的牌。"),
+  // 保留与改造
+  gear("GEAR_MIGHT","护腕",6,"命中时","每回合至多1次",
+    "你用点数 ≥ 7 的牌命中，伤害+1；若该牌点数为 12，改为 +3。",
+    "点数 ≥ 7 时增伤／尖峰","仍受怪物花色、攻击者等命中要求限制。"),
+  gear("GEAR_SPARK","小刀",6,"命中时","每回合至多1次",
+    "你用点数 ≤ 6 的牌命中，伤害+1；若该牌点数为 1，改为 +3。",
+    "点数 ≤ 6 时增伤／尖峰","帮助低数打出伤害，需要队友调数、弃牌或传牌。"),
+  gear("GEAR_BANNER","小旗",6,"命中时","每回合至多1次",
+    "你未获胜，且本回合命中者与上次不同，伤害+1。",
+    "换人攻击／辅助／接力","第一次命中不触发；持有者在场且条件满足时自动生效。"),
+  gear("GEAR_POUCH","背包",5,"自己的结束能力结算后","每场1次",
+    "摸2张牌，留1张，另1张传给另一名玩家。",
+    "补牌／分配／信息","只摸到1张时可自留或传出；可触发你持有的传牌装备。")
+];
+
+const item = (id,name,price,timing,text,tags,note) => ({id,name,price,timing,text,tags,note,quantity:2});
+const consumables = [
+  item("ITEM_DYE","染料",3,"自己出牌前",
+    "将你要出的牌变为任意普通花色。","变色／命中／救场","先变色再检查跟牌；本回合结束复原。"),
+  item("ITEM_RULER","尺子",3,"自己出牌前",
+    "将你要出的牌点数设为1至12。","调数／奇偶／升降序","点数须为整数；设值后可应用增减，本回合结束复原。"),
+  item("ITEM_SUPPLY","补给包",3,"自己出牌前",
+    "摸2张牌，弃1张牌。","补牌／滤牌／缺门","摸牌不足时少摸；至少有1张手牌可弃才可用。"),
+  item("ITEM_CHARGE","力量药",3,"本回合全部结束能力结算后",
+    "指定一名玩家，其下回合命中时伤害+2。","蓄势／接力／输出","下一回合未命中也到期；不能直接造成伤害。"),
+  item("ITEM_YIELD","让路",3,"自己出牌前",
+    "指定另一名玩家，他本回合不受跟牌义务限制。","免跟牌／救场／多色追加","只对本回合有效；不能指定自己，被指定者仍照原顺位出牌。"),
+  item("ITEM_ADVANCE","预支",4,"发牌时",
+    "你本场多发2张手牌，但不能通过任何效果摸牌。","起手／取舍／时长","发牌阶段使用；本场所有让你摸牌的效果对你无效，传牌与拾取不受影响。"),
+  item("ITEM_PLEDGE","军令状",4,"战斗开始时",
+    "公开宣告一名玩家和一个回合序号。若他在该回合命中，全队获得2金币，且该次命中伤害+2。","宣告／团队目标／产金","宣告后不可更改；未命中则无事发生，金币在命中时立即入账。"),
+  item("ITEM_WARDRUM","战鼓",5,"本回合伤害结算前",
+    "本回合命中造成的伤害翻倍。","爆发／输出／兑现","未命中则无效果；先算完所有加成再翻倍。"),
+  item("ITEM_BLANK","空白牌",4,"自己出牌前",
+    "代替你本回合的出牌：宣告任意花色与点数，不消耗手牌。","补位／精确控胜负／救场","视为你本回合打出的牌，可获胜并命中；回合结束后移出本局，不进已打出区。"),
+  item("ITEM_SMOKE","烟雾弹",2,"自己出牌前",
+    "本回合你的牌不能成为获胜牌。","让胜／救场／配合","仍须合法跟牌；该牌不会成为获胜牌。"),
+  item("ITEM_BELL","铃铛",2,"任意时刻",
+    "指定一名玩家，向他展示你的全部手牌。","信息／破封锁／配合","只有你和对方知道；不构成口头报牌或暗号。"),
+  item("ITEM_MULLIGAN","调度令",3,"发牌后",
+    "把你的手牌洗回调度牌堆，重抽同样数量。","调度／起手／救场","洗回后立刻重抽；新手牌不保证更好。"),
+  item("ITEM_SEAT","换位符",3,"战斗开始时",
+    "与另一名玩家交换座位，本场有效。","顺位／指定座次／准备","两人的手牌和装备随人走；下一场恢复原座次。"),
+  item("ITEM_KNOT","同心结",3,"回合结束时",
+    "指定两名玩家，他们各自暗传1张手牌给对方。","双向传牌／信息／调度","两人须不同且均有手牌；可以包含自己。双方各自选牌后同时交出。")
+];
+
+const componentRules = [
+  ["牌库牌","购买后加入公共牌库；下一场重新洗入，发给谁由发牌决定。牌面文字中的“你”指打出者。","沿用方向"],
+  ["分阶段发牌","第1–4关每人5张，第5–12关每人6张，重试同样按当前关卡发牌。只增加起始手牌，初始牌库仍为24张，余牌组成调度牌堆。","已确定方向"],
+  ["初始牌","24张无技能基础牌，每色1、2、5、8、11、12各一张。通过开局采购加入第一批工具。","本轮提案"],
+  ["调度与弃牌","每场剩余牌组成调度牌堆。打出的牌单独收集；主动弃牌进入公开弃牌区。本场不自动重洗。","本轮提案"],
+  ["黑色王牌","黑色是一次性牌库牌，购买后洗入牌库，打出可不跟色；黑色优先获胜，多黑比点数，同点先出者赢。黑色领出不限制普通牌花色。获胜强制命中，仅基础伤害并允许组件增伤；回合结束移出本局，不可回收，重试不返还。","已确定方向"],
+  ["无保底伤害","伤害=命中基础伤害+满足条件的怪物追加+允许的卡牌／装备加成；未命中时全为0。","已确定方向"],
+  ["卡面简写","摸牌从调度牌堆取得；弃牌指公开弃自己的手牌；传牌指暗传自己的手牌。指定一名玩家可选自己，另一名／其他玩家不可选自己。按文字顺序结算。","通用规则"],
+  ["选择与时点","可放弃整项主动效果；一旦发动，费用必须支付。不能用“然后”后的收益补付前面的费用。","本轮提案"],
+  ["出牌前","先结算到期标记、装备、消耗品和本牌的出牌前效果，锁定本牌有效点数／花色，再合法出牌。","本轮提案"],
+  ["变色与跟牌","只改变本次选中的牌。按变色后的整个手牌检查：还有跟牌花色就必须出该色。首家最终花色锁定本回合跟牌花色。","本轮提案"],
+  ["调数叠加","先翻点，再设值，最后应用加减；多次设值由出牌者选择顺序。最终点数限制在1–12，调整可跨过6与7的分界。","本轮提案"],
+  ["获胜","黑色优先；没有黑色时，跟牌花色中最终有效点数最大的牌获胜，同点时较早打出者获胜；赢家领出下一回合。","本轮提案"],
+  ["复原","花色／点数变化只持续本回合。结算全部条件后复原；接力回到手中的牌也恢复印刷值。","本轮提案"],
+  ["打出时","合法打出后立即结算，再轮到下一人；第4人的即时效果也先于胜负与伤害。暗置牌的即时效果延至四人出齐揭开后，按出牌顺序结算，再判赢家。","本轮提案"],
+  ["回合结束结算","先揭开暗置牌、判赢家和命中并计算伤害，再按出牌顺序结算四张牌的回合结束能力及其持有者装备。","本轮提案"],
+  ["攻击力","每层攻击力使持有者下一次命中伤害+1，可叠加，本回合即可生效。未获胜或未命中则保留；造成伤害时消耗全部层数，本场结束清除。","已确定方向"],
+  ["下回合标记","下回合调点可±1至3，下回合变色可改任意普通花色。同名不叠加，各在下一回合结束到期。力量药的下一回合伤害可相加。","本轮提案"],
+  ["伤害来源","所有加成都依附本回合赢家的命中；不能用队友的输出装备替赢家增加伤害，除非装备明确写辅助条件。","已确定方向"],
+  ["个人装备","采购时直接指定持有者，不进公共牌库，无公共储备。暂定每人2件，本局不能转交；满位购买须退掉1件且无退款。","方向已定／限额为提案"],
+  ["个人消耗品","采购时直接指定持有者，放在牌库外；暂定每人2件，每人每回合最多用1件。使用后移出本局，不能转交或回收。","本轮提案"],
+  ["装备触发边界","传牌包含暗传、明取给人及交换中的交出；不包含初始发牌。主动弃牌不含出牌。出牌前和打出时事件不触发注明回合结束的装备；暗置牌延后的即时效果也不触发。","本轮提案"],
+  ["信息边界","弃牌与已出牌公开；暗传仅双方知牌面；取得公开弃牌时全队知牌面。不得报告手牌或预先约定暗号。","已确定方向"],
+  ["暗置出牌","面具只能在非首家时使用。暗置时锁定牌及修改，按当时手牌检查跟牌，四人出完揭开后统一结算。","本轮提案"],
+  ["随机市场","三类商品按数量混洗，随机展示，不保底类型。买后留空；付费全换，旧市场放供应弃区，供应耗尽只重洗未购商品。","本轮提案"],
+  ["采购衔接","开局及每次非最终关胜利后采购。新采购阶段免费补满空位；结余超上限的金币在离店时失去。","本轮提案"],
+  ["删牌","采购阶段可从整个公共牌库删1张，每次采购至多一次，付配置费用；没有最低张数。牌库削到发不出牌就打不下去，这笔账由队伍自己算。","本轮提案"],
+  ["不足与失败","不生成疲劳牌。调度不足时少摸；结算回合结束能力后仍未击败怪物，且下回合有玩家无牌可出，则战败。","测试规则"],
+  ["重试","暂给2次额外重试。战败时有剩余机会则扣1并重试同怪，无机会则整局失败。重洗公共牌库、重置怪物和装备次数；消耗品不返还，不采购、不产金。","测试规则"],
+  ["测试边界","普通怪物三个阶段各9只，共27只。所有怪物数值与重试规则为测试配置；网页已接入，尚无真人平衡结论。","测试规则"]
+];
+
+return {suits:suits,abilities:abilities,colorRoles:colorRoles,cards:cards,startingCards:startingCards,equipment:equipment,consumables:consumables,componentRules:componentRules};
+})();
+modules.m1=(()=>{
+// 界面与引擎文案表。
+// 信源是配置表 XLSX 的「界面文案」页：改文案请改那一页，然后运行
+//   node 配置/import_strings.mjs
+// 本文件由该脚本生成，不要直接编辑。
+// 文案里的 {p1} {p2} 等是占位符，由调用处按顺序传入。
+
+const strings = {
+  "bot.no_legal_card": "没有合法牌",
+  "common.bad_suit": "花色无效",
+  "common.both_need_cards": "双方都须有手牌",
+  "common.deck_count": "公共牌库 {p1} 张",
+  "common.hidden": "暗置",
+  "common.labeled": "{p1}：{p2}",
+  "common.no_gold": "金币不足",
+  "common.original_card": "原牌：{p1} {p2}",
+  "common.pick_card": "请选择手牌",
+  "common.pick_own_card": "请选择自己的手牌",
+  "common.pick_two_players": "请选择两名不同玩家",
+  "common.player": "玩家{p1}",
+  "common.won_round": "获胜",
+  "engine.assertZones.err1": "同一实体卡牌出现在多个区域",
+  "engine.assertZones.err2": "有卡牌离开了区域记账",
+  "engine.bell.info": "铃铛：玩家{p1}的全部手牌 {p2}",
+  "engine.blank.name": "空白牌",
+  "engine.buy.err1": "只在采购时购买",
+  "engine.buy.err2": "商品或持有者无效",
+  "engine.buy.err4": "装备已满，请选择退掉哪一件",
+  "engine.buy.err5": "该玩家消耗品已满",
+  "engine.buy.log_deck": "购买{p1}，加入公共牌库。",
+  "engine.buy.log_owner": "购买{p1}，归玩家{p2}持有。",
+  "engine.common.empty": "（空）",
+  "engine.component.axe": "刻痕斧+1",
+  "engine.component.boost": "组件增伤{p1}",
+  "engine.component.extra": "怪物追加{p1}",
+  "engine.component.hammer": "重锤+3",
+  "engine.component.hit": "命中{p1}",
+  "engine.component.wardrum": "战鼓翻倍",
+  "engine.delayPlay.err1": "当前不能延后出牌",
+  "engine.delayPlay.err2": "鼓槌不可用",
+  "engine.delayPlay.err3": "首家不能延后",
+  "engine.delayPlay.err4": "本回合已有人延后",
+  "engine.delayPlay.log1": "玩家{p1}用鼓槌延后到最后出牌。",
+  "engine.deleteCard.err1": "本次采购已删过牌",
+  "engine.deleteCard.err3": "卡牌不存在",
+  "engine.deleteCard.log1": "从公共牌库永久移除1张牌。",
+  "engine.discardCard.log1": "玩家{p1}公开弃掉{p2}。",
+  "engine.endTrick.log1": "击败{p1}，获得{p2}金币。",
+  "engine.err.unknown_ability": "未知能力 {p1}",
+  "engine.fail.log1": "{p1}，牌库不足以重试发牌。",
+  "engine.fail.log2": "{p1}，消耗1次重试机会；可重新挑战当前怪物。",
+  "engine.fail.log3": "{p1}，重试机会耗尽。",
+  "engine.fail.reason_next": "下一回合有玩家无牌可出",
+  "engine.fail.reason_now": "本回合轮到的玩家无牌可出",
+  "engine.finishTrick.log1": "军令状达成：玩家{p1}在第{p2}回合命中，全队获得2金币。",
+  "engine.finishTrick.log2": "玩家{p1}的秒表翻面。",
+  "engine.finishTrick.log3": "玩家{p1}的秒表补牌。",
+  "engine.finishTrick.log_hit": "第{p1}回合：玩家{p2}获胜，命中，造成{p3}点伤害。",
+  "engine.finishTrick.log_miss": "第{p1}回合：玩家{p2}获胜，未命中，伤害0。",
+  "engine.finishTrick.log_wardrum": "战鼓：本回合伤害翻倍。",
+  "engine.leaveShop.err1": "当前不在采购阶段",
+  "engine.modified.err1": "此牌不能翻点",
+  "engine.modified.err10": "只有首家能用旗座",
+  "engine.modified.err12": "不能暗置此牌",
+  "engine.modified.err2": "低点选择无效",
+  "engine.modified.err3": "赌徒骰不可用",
+  "engine.modified.err4": "宣告点数必须为1–12",
+  "engine.modified.err5": "调数选择无效",
+  "engine.modified.err7": "没有变色能力",
+  "engine.modified.err8": "短绳不可用",
+  "engine.modified.err9": "旗座不可用",
+  "engine.play.err1": "请先完成当前能力",
+  "engine.play.err3": "仍有跟牌花色，必须出该色；变色后也要合法",
+  "engine.play.log1": "玩家{p1}用短绳不跟色，该牌本回合不能成为获胜牌。",
+  "engine.play.log2": "玩家{p1}用旗座指定本回合跟牌花色为{p2}。",
+  "engine.play.log_hidden": "玩家{p1}暗置一张牌。",
+  "engine.play.log_open": "玩家{p1}打出{p2}{p3}。",
+  "engine.playBlank.err1": "还没轮到你出牌",
+  "engine.playBlank.err3": "点数必须为1–12",
+  "engine.playBlank.log1": "玩家{p1}用空白牌打出{p2}{p3}。",
+  "engine.refresh.err1": "无法刷新",
+  "engine.removeHand.err1": "所选牌不在手中",
+  "engine.resolve.err1": "没有待结算能力",
+  "engine.resolve.err12": "没有同心结",
+  "engine.resolve.err15": "请选择本回合打出的牌",
+  "engine.resolve.err17": "只能存自己本回合尚未交出的非消耗牌",
+  "engine.resolve.err18": "该牌不在公共牌库",
+  "engine.resolve.err19": "请选择本回合已结算的「回合结束时」能力",
+  "engine.resolve.err2": "已支付消耗品，需完成效果",
+  "engine.resolve.err20": "该牌不存在",
+  "engine.resolve.err21": "请选择点数 ≥ 7 的手牌",
+  "engine.resolve.err22": "请选择摸到的牌",
+  "engine.resolve.err23": "另两张须传给两名不同玩家",
+  "engine.resolve.err26": "对方没有手牌",
+  "engine.resolve.err29": "接力牌不存在",
+  "engine.resolve.err3": "请选择发动或放弃",
+  "engine.resolve.err30": "请选择符合条件的公开牌",
+  "engine.resolve.err31": "点数必须为1–12的整数",
+  "engine.resolve.err32": "本回合已经用过消耗品",
+  "engine.resolve.err4": "目标玩家无效",
+  "engine.resolve.err6": "重排必须使用看到的那几张",
+  "engine.resolve.err7": "没有换位符",
+  "engine.resolve.err8": "回合序号必须是本回合或之后",
+  "engine.resolve.err9": "没有军令状",
+  "engine.resolve.log1": "玩家{p1}补牌。",
+  "engine.resolve.log10": "换位符：玩家{p1}与玩家{p2}交换座位。",
+  "engine.resolve.log11": "军令状：宣告玩家{p1}在第{p2}回合命中。",
+  "engine.resolve.log12": "刻痕斧：{p1}移出本局，追加1点伤害。",
+  "engine.resolve.log13": "赌徒骰落空：玩家{p1}本回合未获胜，弃1张牌。",
+  "engine.resolve.log14": "哨子：由玩家{p1}领出下一回合。",
+  "engine.resolve.log15": "玩家{p1}用传声筒向玩家{p2}展示1张手牌。",
+  "engine.resolve.log16": "蓄水壶：玩家{p1}取回{p2}，壶翻面失效。",
+  "engine.resolve.log17": "蓄水壶：{p1}存入壶中，全队可见。",
+  "engine.resolve.log18": "回声贝：玩家{p1}复制了{p2}。",
+  "engine.resolve.log19": "玩家{p1}让玩家{p2}摸{p3}张牌。",
+  "engine.resolve.log2": "玩家{p1}使用预支：多发2张，本场不再摸牌。",
+  "engine.resolve.log20": "玩家{p1}拾取{p2}。",
+  "engine.resolve.log21": "玩家{p1}使用力量药，为玩家{p2}准备下一回合。",
+  "engine.resolve.log3": "玩家{p1}使用调度令，重抽{p2}张手牌。",
+  "engine.resolve.log4": "玩家{p1}使用单筒镜查看调度牌堆顶。",
+  "engine.resolve.log5": "玩家{p1}使用重锤，追加3点伤害，须弃2张手牌。",
+  "engine.resolve.log6": "让路：玩家{p1}本回合不受跟牌义务限制。",
+  "engine.resolve.log7": "玩家{p1}向玩家{p2}展示了全部手牌。",
+  "engine.resolve.log8": "玩家{p1}重排了调度牌堆顶{p2}张。",
+  "engine.resolve.log9": "暗号板：玩家{p1}公开指定玩家{p2}。",
+  "engine.retry.err1": "当前不可重试",
+  "engine.scope.info": "单筒镜：调度牌堆顶 {p1}",
+  "engine.shell.log_void": "回声贝：没有自己的牌可接力，效果作废。",
+  "engine.start.err1": "已经开始",
+  "engine.start.log1": "种子 {p1}：三个节点已公开，先用 {p2} 金币采购。",
+  "engine.startBattle.err1": "牌库不足以发牌",
+  "engine.startBattle.log1": "第{p1}关：{p2}，生命{p3}{p4}。",
+  "engine.startBattle.retry_mark": "（重试）",
+  "engine.top.err1": "必须四人出齐才能判定",
+  "engine.transfer.err1": "请选择另一名玩家",
+  "engine.transfer.info": "玩家{p1} → 玩家{p2}：{p3}",
+  "engine.transfer.log1": "玩家{p1}向玩家{p2}传了{p3}张牌。",
+  "engine.tube.info": "传声筒：玩家{p1} 展示 {p2}",
+  "engine.useItem.err1": "只能在自己出牌前使用",
+  "engine.useItem.err2": "没有该消耗品",
+  "engine.useItem.err3": "该消耗品在回合结束使用",
+  "engine.useItem.err4": "该消耗品在战斗开始时使用",
+  "engine.useItem.err5": "本回合已用消耗品",
+  "engine.useItem.err6": "没有可弃的牌",
+  "engine.useItem.err7": "没有可指定的玩家",
+  "engine.useItem.err8": "没有手牌可展示",
+  "engine.useItem.log1": "玩家{p1}使用{p2}。",
+  "ui.cardView.illegal_aria": "（当前不能直接打出）",
+  "ui.cardView.lead_suit": "跟牌花色",
+  "ui.cardView.must_follow": "须跟{p1}",
+  "ui.cardView.recolor": "变色后可出",
+  "ui.choice.activate": "发动",
+  "ui.choice.blank_rank": "宣告点数",
+  "ui.choice.blank_suit": "宣告花色",
+  "ui.choice.confirm": "确认结算",
+  "ui.choice.confirm_targets": "确认玩家",
+  "ui.choice.desc_fallback": "按卡面结算。",
+  "ui.choice.give": "把唯一摸到的牌交给所选玩家",
+  "ui.choice.header": "玩家{p1} · {p2}",
+  "ui.choice.knot_targets": "指定两名互传手牌的玩家。",
+  "ui.choice.label_card": "选择卡牌",
+  "ui.choice.label_keep": "选择自己保留的牌",
+  "ui.choice.label_receive": "先选好自己的交换牌；确认后双方同时交换",
+  "ui.choice.name_advance_offer": "预支",
+  "ui.choice.name_axe_offer": "刻痕斧",
+  "ui.choice.name_charge_offer": "力量药",
+  "ui.choice.name_dice_penalty": "赌徒骰结算",
+  "ui.choice.name_flask_offer": "蓄水壶",
+  "ui.choice.name_hammer_offer": "重锤",
+  "ui.choice.name_item_bell": "铃铛",
+  "ui.choice.name_item_blank": "空白牌",
+  "ui.choice.name_item_rank": "尺子",
+  "ui.choice.name_item_supply": "补给包",
+  "ui.choice.name_item_yield": "让路",
+  "ui.choice.name_knot_offer": "同心结",
+  "ui.choice.name_mulligan_offer": "调度令",
+  "ui.choice.name_pledge_offer": "军令状",
+  "ui.choice.name_pouch": "背包",
+  "ui.choice.name_scope_offer": "单筒镜",
+  "ui.choice.name_seat_offer": "换位符",
+  "ui.choice.name_shell_offer": "回声贝",
+  "ui.choice.name_sign_offer": "暗号板",
+  "ui.choice.name_tube_offer": "传声筒",
+  "ui.choice.name_whistle_offer": "哨子",
+  "ui.choice.pass_clockwise": "选1张手牌传给玩家{p1}，全部选定后同时交出。",
+  "ui.choice.pledge_turn": "宣告回合序号",
+  "ui.choice.reveal_title": "揭开后 · 打出时",
+  "ui.choice.set_rank": "设为点数",
+  "ui.choice.skip": "放弃本次效果",
+  "ui.choice.swap_targets": "指定两名交换手牌的玩家。",
+  "ui.choice.title_fallback": "结算效果",
+  "ui.choice.turn_option": "第{p1}回合",
+  "ui.combat.bot_thinking": "玩家{p1}正在思考……",
+  "ui.combat.breach_off": "<b>破绽</b> 还没有标记。这一回合命中就放上标记，条件换成「{p1}」，按那条命中伤害 +{p2}。",
+  "ui.combat.breach_off_echo": "<b>破绽</b> 还没有标记。这一回合命中就把标记放在获胜牌的点数上，之后要用同点数的牌获胜，不限花色，按那条命中伤害 +{p1}。",
+  "ui.combat.breach_on": "<b>破绽</b> 标记已放上。按上面的条件命中，伤害 +{p1} 并拿走标记；落空标记不会消失。",
+  "ui.combat.collect": "<b>已点亮</b> {p1} · 集齐{p2}色爆发后清空",
+  "ui.combat.discard_count": "弃牌 {p1}",
+  "ui.combat.draw_count": "调度牌 {p1}",
+  "ui.combat.echo": "<b>标记点数</b> {p1}",
+  "ui.combat.extra": "<b>追加 +{p1}</b> {p2}",
+  "ui.combat.eyebrow": "{p1} · 第 {p2} 关",
+  "ui.combat.flask": "<b>蓄水壶</b> {p1}",
+  "ui.combat.hit": "<b>命中</b> {p1}",
+  "ui.combat.last_hit": "上次命中：{p1}",
+  "ui.combat.lowest": "<b>本回合小牌赢</b> 黑色仍优先；黑牌间比大，同点先出者赢。",
+  "ui.combat.mallet": "<b>鼓槌</b> 玩家{p1}延后到最后出牌",
+  "ui.combat.marks": "已命中：{p1}",
+  "ui.combat.monster_fallback": "怪物",
+  "ui.combat.next_defeat": "远征结束。",
+  "ui.combat.next_result_btn": "查看结果",
+  "ui.combat.next_retry": "战斗失败。",
+  "ui.combat.next_shop": "怪物已击败，进入采购。",
+  "ui.combat.next_shop_btn": "进入采购",
+  "ui.combat.next_trick": "下一回合由玩家{p1}领出。",
+  "ui.combat.next_trick_btn": "下一回合",
+  "ui.combat.next_victory": "最终 Boss 倒下。",
+  "ui.combat.none": "无",
+  "ui.combat.pass_screen": "请把屏幕交给玩家{p1}",
+  "ui.combat.pledge": "<b>军令状</b> 玩家{p1} · 第{p2}回合",
+  "ui.combat.progress": "<b>进度</b> {p1}",
+  "ui.combat.progress_done": "已击败",
+  "ui.combat.progress_remain": "还需 {p1} 点伤害 · 最多还能打 {p2} 回合",
+  "ui.combat.req_large": "本次要求：{p1} · 点数 ≥ {p2}",
+  "ui.combat.req_plain": "本次要求：{p1}",
+  "ui.combat.req_small": "本次要求：{p1} · 点数 ≤ {p2}",
+  "ui.combat.reveal": "查看手牌",
+  "ui.combat.review_line": "{p1}　{p2}",
+  "ui.combat.review_title": "第 {p1} 回合 · 玩家{p2}获胜",
+  "ui.combat.sign": "<b>暗号板</b> 玩家{p1}{p2}",
+  "ui.combat.sign_used": "（已兑现）",
+  "ui.combat.turn_hp": "第 {p1} 回合 · 生命 {p2} / {p3}",
+  "ui.deckSummary.note": "带下划线的点数有卡面能力。本关怪物进入战斗时才揭示；采购时先看上方第 4、8、12 关的节点要求。",
+  "ui.deckSummary.suit_line": "<b>{p1}</b> {p2}张 <small>{p3}</small>",
+  "ui.drag.cancel": "已取消拖动",
+  "ui.drag.need_options": "先选择点数或花色，再点击出牌或拖到桌心。",
+  "ui.drag.picked": "已选择卡牌和玩家{p1}，请确认结算。",
+  "ui.dropCard.illegal": "这张牌当前不能打出，请出跟牌花色的牌，或使用合法的调整能力。",
+  "ui.dropCard.played": "已出牌",
+  "ui.effectText.forced_hit": "强制命中",
+  "ui.effectText.none": "无额外效果。",
+  "ui.ending.defeat": "远征结束",
+  "ui.ending.reset_btn": "重新开局",
+  "ui.ending.retry": "本次战斗失败",
+  "ui.ending.retry_btn": "重新挑战当前关卡",
+  "ui.ending.retry_note": "重试同一只怪物，牌库重新洗牌，装备恢复次数；已经用掉的消耗品不返还，不额外获得金币。",
+  "ui.ending.victory": "十二关全部打通",
+  "ui.hand.discard": "公开弃牌",
+  "ui.hand.hide": "收起手牌",
+  "ui.hand.intel": "传牌记录",
+  "ui.hand.scroll_left": "查看左侧手牌",
+  "ui.hand.scroll_right": "查看右侧手牌",
+  "ui.hand.title": "玩家{p1}的手牌 <small>{p2}张</small>",
+  "ui.hand.use_item": "使用{p1}",
+  "ui.historyView.earlier": "查看前{p1}回合出牌",
+  "ui.historyView.title": "上一回合",
+  "ui.nodeView.extra": "追加 +{p1}：{p2}",
+  "ui.nodeView.hit": "命中：{p1}",
+  "ui.nodeView.stage": "第{p1}关 · {p2}",
+  "ui.playControls.adjust": "调点",
+  "ui.playControls.adjust2": "基础牌调点",
+  "ui.playControls.as_label": "当作",
+  "ui.playControls.cloak_partner": "斗篷同伴",
+  "ui.playControls.delay": "鼓槌：延后到最后出牌（余{p1}次）",
+  "ui.playControls.dice_label": "赌徒骰宣告点数",
+  "ui.playControls.hint": "点击手牌查看选项，或拖到桌心出牌。",
+  "ui.playControls.keep_rank": "保持原点数",
+  "ui.playControls.keep_suit": "保持原花色",
+  "ui.playControls.no_adjust": "不调整",
+  "ui.playControls.play": "打出这张牌",
+  "ui.playControls.prepared": "下回合调点",
+  "ui.playControls.ready": "准备打出：{p1}",
+  "ui.playControls.rope": "短绳：不跟色出牌（本牌不能成为获胜牌，余{p1}次）",
+  "ui.playControls.standard_label": "旗座指定跟牌花色",
+  "ui.playControls.suit_label": "有效花色",
+  "ui.playControls.unused": "不使用",
+  "ui.playControls.veil": "暗置（{p1}）",
+  "ui.playControls.your_turn": "轮到你出牌",
+  "ui.playedCards.hidden_hint": "四人出齐后翻开",
+  "ui.playedCards.seat": "第{p1}位 · 玩家{p2}",
+  "ui.playedCards.seat_lead": "第{p1}位 · 玩家{p2} · 首家",
+  "ui.playedCards.waiting": "等待出牌",
+  "ui.playerSelect.target": "接收／目标玩家",
+  "ui.playerSelect.target2": "第二位接收者",
+  "ui.render.future_nodes": "后续怪物",
+  "ui.reset.confirm": "放弃当前进度，重新开局？",
+  "ui.resultText.base": "基础伤害",
+  "ui.resultText.hit": "命中 · {p1}伤害 <small>（{p2}）</small>",
+  "ui.resultText.miss": "未命中 · 0伤害",
+  "ui.setup.eyebrow": "四人协作 · 十二关远征",
+  "ui.setup.howto": "怎么玩",
+  "ui.setup.howto1": "四人共用一副牌库，每关先采购再战斗。战斗里顺时针出牌，首家出的牌定下本回合跟牌花色，手里有这个花色就必须出。跟牌花色里点数最大的牌获胜，缺门时垫出的别的花色不参与比大。",
+  "ui.setup.howto2": "获胜的那张牌满足怪物的命中条件才造成伤害；打到有人没牌可出为止，怪物没死就要消耗重试。",
+  "ui.setup.howto3": "第 4、8、12 关是固定节点，开局就公开，采购时可以照着它们的要求配牌。",
+  "ui.setup.intro": "调度手牌，配合取胜，击败怪物。<br>每个人的这一张，都有用。",
+  "ui.setup.mode_hotseat": "四人传屏",
+  "ui.setup.mode_label": "选择玩法",
+  "ui.setup.mode_solo": "单人 + 三名电脑队友",
+  "ui.setup.start": "开始",
+  "ui.setup.title": "四个人，一起打出好配合。",
+  "ui.shop.buy": "购买 · {p1}金币",
+  "ui.shop.carry_cap": "离店最多保留 {p1} 金币",
+  "ui.shop.delete": "删除 · {p1} 金币",
+  "ui.shop.delete_label": "选择要删除的牌",
+  "ui.shop.delete_summary": "删牌与公共牌库（每次采购最多删1张）",
+  "ui.shop.header_first": "初始采购",
+  "ui.shop.header_later": "战后采购",
+  "ui.shop.leave": "完成采购，进入战斗",
+  "ui.shop.owner": "持有者",
+  "ui.shop.refresh": "刷新全部 · {p1} 金币",
+  "ui.shop.replace": "满位时退掉",
+  "ui.shop.replace_none": "未选择",
+  "ui.shop.replace_option": "玩家{p1}：{p2}",
+  "ui.shop.sold_out": "已售出",
+  "ui.stats.gold": "金币 {p1}",
+  "ui.stats.level": "第 {p1} / 12 关",
+  "ui.stats.retries": "剩余重试 {p1}",
+  "ui.table.clockwise": "顺时针出牌 ↻",
+  "ui.table.drop_hint": "拖到这里出牌",
+  "ui.table.hand_count": "{p1}张牌",
+  "ui.table.hand_count_lead": "{p1}张牌 · 首家",
+  "ui.table.hit": "命中",
+  "ui.table.lead_suit": "跟牌 · {p1}",
+  "ui.table.miss": "未命中",
+  "ui.table.resolving": "玩家{p1}结算效果",
+  "ui.table.resolving_hint": "结算效果中",
+  "ui.table.seat_order": "第{p1}位",
+  "ui.table.thinking": "玩家{p1}思考中…",
+  "ui.table.trick_done": "第 {p1} 回合结束",
+  "ui.table.trick_no": "第 {p1} 回合",
+  "ui.table.turn_of": "轮到玩家{p1}",
+  "ui.table.waiting": "待出牌",
+  "ui.table.waiting_lead": "等待首家领牌",
+  "ui.table.winner": "玩家{p1}获胜",
+  "ui.table.winner_result": "玩家{p1}获胜 · {p2}",
+  "ui.tokenText.attack": "攻击力 {p1} 层 · 下次命中伤害+{p2}",
+  "ui.tokenText.charge": "伤害+{p1}",
+  "ui.tokenText.expires": "{p1} · 第{p2}回合",
+  "ui.tokenText.rank": "调点±3",
+  "ui.tokenText.suit": "可变色",
+  "ui.trickRecord.summary": "<b>第{p1}关 · 第{p2}回合</b> · {p3}<br>玩家{p4}获胜 · {p5}",
+  "ui.updateHint.illegal": "仍有跟牌花色，不能这样出牌。",
+  "ui.updateHint.legal": "可以出牌。",
+  "ui.updateHint.text": "结算牌面：{p1}{p2}。{p3}",
+};
+
+// 取文案并填占位符。缺键、占位符没给值、给的值是 null/undefined，一律抛错，
+// 宁可当场炸也不要让 {p1} 或 "undefined" 漏到界面上——那种错在试玩时会被当成美术问题。
+// 用 Object.hasOwn 而不是 in，避免 toString、__proto__ 这类原型上的名字被当成文案键。
+function t(key, params){
+  if (!Object.hasOwn(strings, key)) throw new Error(`缺少文案：${key}`);
+  return strings[key].replace(/\{(\w+)\}/g, (slot, name) => {
+    if (!params || !Object.hasOwn(params, name)) throw new Error(`文案 ${key} 没有给 ${slot} 取值`);
+    const v = params[name];
+    if (v === null || v === undefined) throw new Error(`文案 ${key} 的 ${slot} 取到了 ${v}`);
+    return v;
+  });
+}
+
+return {strings:strings,t:t};
+})();
+modules.m2=(()=>{
+// 网页与工作簿共用。所有数值均是可运行的首轮测试值，不是平衡结论。
+const {cards,startingCards,equipment,consumables,suits}=modules.m0;
+const parameters = [
+  ["player_count","玩家人数",4,"人","已确定方向","固定座次顺时针出牌。"],
+  ["campaign_levels","总关数",12,"关","已确定方向","第4、8、12关为固定节点。"],
+  ["starting_gold","启动资金",10,"金币／团队","测试值","初始采购前获得。"],
+  ["carry_gold_cap","采购后结余上限",2,"金币／团队","测试值","离店时多余金币失去。"],
+  ["hit_damage","命中基础伤害",1,"伤害","测试值","未命中时所有增伤均不结算。"],
+  ["miss_damage","未命中伤害",0,"伤害","已确定方向","没有保底磨血。"],
+  ["small_min","1–6区间下限",1,"点数","测试值","点数修改下限。"],
+  ["small_max","1–6区间上限",6,"点数","测试值","1–6与7–12互补。"],
+  ["large_min","7–12区间下限",7,"点数","测试值","1–6与7–12互补。"],
+  ["large_max","7–12区间上限",12,"点数","测试值","点数修改上限。"],
+  ["initial_retries","额外重试次数",2,"次／团队","测试值","允许两次战败后重试；再败则整局结束。"],
+  ["life_purchase_enabled","购买生命",false,"开关","暂不加入","商店没有购买重试商品。"],
+  ["market_slots","市场展示数",5,"张","测试值","三类商品混洗，无类型保底。"],
+  ["market_refresh_cost","市场刷新费用",1,"金币","测试值","全市场刷新。"],
+  ["equipment_slots","个人装备上限",2,"件","测试值","满位时选择退掉的装备。"],
+  ["deck_delete_cost","删牌费用",2,"金币","测试值","每次采购限1张；没有最低张数，牌库削到发不出牌就打不下去。"],
+  ["consumable_slots","个人消耗品上限",2,"件","本轮提案","不进公共牌库。"],
+  ["consumables_per_trick","每人每回合消耗品上限",1,"件","测试值","出牌前或回合结束使用均计入。"],
+  ["opening_hand","前期起始手牌",5,"张／人","测试值","第1–4关；余牌为调度牌堆。"],
+  ["later_opening_hand","中后期起始手牌",6,"张／人","测试值","第5–12关；同关重试也按此数量发牌。"],
+  ["larger_hand_from_level","增加起始手牌的关卡",5,"关","测试值","从本关起每人发6张，初始牌库仍为24张。"],
+  ["reserve_cards","建议调度储备",4,"张","参考值","仅用于校验初始牌库够发牌；不再是删牌下限。"],
+  ["mirror_total","翻点总和",13,"点数","测试值","翻点后的点数=此值减印刷点数。"]
+];
+const config = Object.fromEntries(parameters.map(r => [r[0], r[2]]));
+const openingHandForLevel = level => level>=config.larger_hand_from_level?config.later_opening_hand:config.opening_hand;
+const node = (id,name,stage,hit,bonus,gate,extraRule,extra,hp,reward,state,tools) =>
+  ({id,name,stage,hit,bonus,gate,extraRule,extra,hp,reward,state,tools,type:stage===12?"最终Boss":"精英怪"});
+const nodes = [
+  node("E4-R","红乌龟",4,"获胜牌为红色。","获胜牌点数 ≥ 7。",{suit:"red"},"large",1,5,7,"无额外状态。","高牌、调数、定向传牌。"),
+  node("E4-B","蓝鹿",4,"获胜牌为蓝色。","获胜牌为偶数。",{suit:"blue"},"even",1,4,7,"无额外状态。","偶数攻击、调数、传牌。"),
+  node("E4-G","绿鸟",4,"获胜牌为绿色。","本回合至少两种花色。",{suit:"green"},"two_plus_suits",1,5,7,"无额外状态。","缺门、变色、多色配合。"),
+  node("E4-Y","黄守卫",4,"获胜牌为黄色。","本回合至少有一张点数 ≤ 6 的牌。",{suit:"yellow"},"minimum_small",1,5,7,"无额外状态。","黄色攻击与低点牌支援。"),
+  node("E8-R","火犀牛",8,"获胜牌为红色且点数 ≥ 7。","本回合至少有一张点数 ≤ 6 的牌。",{suit:"red",size:"large"},"minimum_small",1,7,9,"无额外状态。","点数 ≥ 7 的牌攻击与低数配合共存。"),
+  node("E8-B","冰蜘蛛",8,"获胜牌为蓝色。","本回合恰好两种花色。",{suit:"blue"},"two_suits",1,12,9,"无额外状态。","蓝色控胜负、缺门、双色配合。"),
+  node("E8-G","变色兽",8,"绿、黄交替命中，从绿开始。","本回合恰好两种花色。",{cycle:["green","yellow"]},"two_suits",2,10,9,"命中后切换花色。","传牌、调数、安排下回合首家。"),
+  node("E8-Y","黄队长",8,"获胜牌为黄色且不是上次命中者。","获胜牌为偶数。",{suit:"yellow",rotate:true},"even",1,11,9,"首击不限攻击者，未命中不清除。","换人攻击、奇偶调整。"),
+  node("B12-R","彩虹龙",12,"按红、蓝、绿、黄循环命中，且须换人。","本回合恰好三种花色。",{cycle:["red","blue","green","yellow"],rotate:true},"three_suits",2,15,0,"红色开始，首击不限攻击者；命中后推进。","跨色接力、缺门、资源分配。"),
+  node("B12-B","双头兽",12,"获胜牌为红色且点数 ≥ 7。命中后改为蓝色且点数 ≤ 6，再命中换回来。","本回合至少两种花色。",{phases:[{suit:"red",size:"large"},{suit:"blue",size:"small"}]},"two_plus_suits",2,12,0,"从红色那面开始，每次命中后换面，未命中不换。","低点控回合、传走高牌、缺门与跨色回收。"),
+  node("B12-G","大蜘蛛",12,"第三位出牌者以绿色获胜。","第四位出的牌为非绿色。",{suit:"green",position:2},"fourth_non_green",2,9,0,"第三位相对于本回合首家。","第三位接绿牌获胜，第四位缺绿后垫任意点数的异色牌。"),
+  node("B12-Y","石头人",12,"以黄色获胜且本轮尚未命中过。","本回合同时有点数 ≤ 6 和点数 ≥ 7 的牌。",{suit:"yellow",unique:true},"both_sizes",2,14,0,"每次命中标记攻击者，四人全标记后清除。","全队分配攻击能力、传牌与回收。")
+];
+// 趣味性扩充：独立候选，数值先按同节点量级试作。
+nodes.push(
+ {...node('E4-E','回声蛙',4,'','',
+   {phases:[{suit:'blue',hit:'获胜牌为蓝色。'},{echo:true,hit:'获胜牌点数等于标记上的数字，不限花色。'}]},'breach',2,5,7,
+   '','调点、双点数、接力；把标记停在队友容易复现的数字上。'),breach:true},
+ {...node('E4-K','风筝怪',4,'','',
+   {phases:[{suit:'green',hit:'获胜牌为绿色。'},{lowest:true,hit:'跟牌花色中最小的牌获胜，不限花色。'}]},'breach',2,8,7,
+   '','小牌抢胜、大牌让胜；标记不会过期，可以攒到手里有小牌再拆。'),breach:true},
+ {...node('E8-L','灯笼怪',8,'任意花色获胜。','集齐三种命中花色，该次伤害+3，随后清空。',{},'collected_colors',3,16,9,
+   '记录命中的红黄蓝绿；重复色不增加，未命中不清除。黑色不收集。','安排不同花色接连命中；先集两色，再留出第三色爆发。'),collectColors:3}
+);
+// 破绽标记：这几只怪有两面，命中就翻面，别的时候都不动。
+// 桌上就是一个标记放在怪物卡上——放上去和拿走都跟着命中走，不会自己过期。
+// 第8关三只精英的第二面在这里定义；第4关的回声蛙和风筝怪直接写在 node 里。
+const breaches={
+ 'E8-R':[{suit:'red',size:'large',hit:'获胜牌为红色且点数 ≥ 7。'},{size:'small',hit:'获胜牌点数 ≤ 6，不限花色。'}],
+ 'E8-B':[{suit:'blue',hit:'获胜牌为蓝色。'},{size:'large',hit:'获胜牌点数 ≥ 7，不限花色。'}],
+ 'E8-Y':[{suit:'yellow',hit:'获胜牌为黄色。'},{rotate:true,hit:'由另一名玩家获胜，不限花色。'}]
+};
+const breachHp={'E8-R':7,'E8-B':11,'E8-Y':10};
+const breachTools={
+ 'E8-R':'高牌开壳，低牌拆壳；两种点数都要留着，只攒一头会卡住。',
+ 'E8-B':'蓝色控胜负，高牌拆壳；标记不会过期，可以等手里凑出 ≥ 7 再动。',
+ 'E8-Y':'黄色开阵，换人拆阵；拆的那一回合别让上次命中的人再赢。'
+};
+for(const n of nodes){if(!breaches[n.id])continue;
+ n.gate={phases:breaches[n.id]};n.breach=true;n.extraRule='breach';n.extra=2;n.hp=breachHp[n.id];n.tools=breachTools[n.id];
+}
+// 五只破绽怪共用同一套说明，只有两面的条件和少数几条补充不一样。
+// 回声蛙的标记要停在某个点数上，所以它放标记的动作要额外写明。
+const tidy=x=>x.replace(/[。；]+$/,'');
+const breachNote={'E4-K':'有标记的那一面只改比大小的方向：黑色仍然优先，黑牌之间仍然比大，同点数先出者赢。'};
+for(const n of nodes){if(!n.breach)continue;
+ const [front,back]=n.gate.phases;
+ const place=back.echo?'命中后把破绽标记放在获胜牌的点数上':'命中后在怪物上放一个破绽标记';
+ n.hit=`没有破绽标记时：${tidy(front.hit)}，${place}。有破绽标记时：${tidy(back.hit)}，按这条命中就把标记拿走。`;
+ n.bonus='带着破绽标记命中。';
+ n.state=`破绽标记只跟着命中走：命中放上，再命中拿走。不会因为过了几个回合自己消失。${breachNote[n.id]||''}`;
+ n.tools=`${n.tools}黑色强制命中同样会放上或拿走标记，但不给追加伤害。`;
+}
+const normalStages = [
+  {stage:1,layers:"1–3",hp:5,reward:6,focus:"按花色或点数范围命中，学习用整回合配合追加伤害。"},
+  {stage:2,layers:"5–7",hp:5,reward:7,focus:"基础怪提高输出要求；进阶怪加入双条件、双色交替或换人攻击。"},
+  {stage:3,layers:"9–11",hp:10,reward:8,focus:"基础怪检验输出效率；进阶怪要求连续调度、换人或精确接手。"}
+];
+const normal = (stage,suffix,name,hit,bonus,gate,extraRule,extra,state,tools) => ({
+  ...normalStages.find(x=>x.stage===stage),id:`N${stage}-${suffix}`,name,type:"普通怪物",
+  hit,bonus,gate,extraRule,extra,state,tools,
+  // 默认复杂怪少1生命；第三阶段再按控胜负难度分配生命，见下方覆盖。
+  hp:normalStages.find(x=>x.stage===stage).hp-(stage===1?0:1)
+});
+const addedNormals = [
+  normal(1,"H","石头怪","获胜牌点数 ≥ 7，不限花色。","本回合至少有一张点数 ≤ 6 的牌。",{size:"large"},"minimum_small",1,"无额外状态。","点数 ≥ 7 的牌攻击，队友垫点数 ≤ 6 的牌；早期调数工具。"),
+  normal(1,"L","小雾猫","获胜牌为蓝色。","获胜牌为偶数。",{suit:"blue"},"even",1,"无额外状态。","双色攻击与奇偶微调。"),
+  normal(1,"M","小飞蛾","获胜牌为绿色。","本回合至少两种花色。",{suit:"green"},"two_plus_suits",1,"无额外状态。","缺门、变色与同色接力。"),
+  normal(1,"C","小灯怪","获胜牌为黄色。","获胜牌为偶数。",{suit:"yellow"},"even",1,"无额外状态。","把黄色攻击资源交给能调数的玩家。"),
+  normal(1,"W","小蜘蛛","获胜牌为蓝色。","本回合至少有一张点数 ≤ 6 的牌。",{suit:"blue"},"minimum_small",1,"无额外状态。","攻击时保留低点牌支援。"),
+  normal(2,"H","红石怪","获胜牌为红色且点数 ≥ 7。","本回合至少有一张点数 ≤ 6 的牌。",{suit:"red",size:"large"},"minimum_small",1,"无额外状态。","把点数 ≥ 7 的牌攻击转换到红色，队友继续提供低数配合。"),
+  normal(2,"L","蓝雾猫","获胜牌为蓝色。","本回合至少两种花色。",{suit:"blue"},"two_plus_suits",1,"无额外状态。","蓝色攻击与缺门配合。"),
+  normal(2,"M","双色蛾","绿、黄交替命中，从绿开始。","本回合至少两种花色。",{cycle:["green","yellow"]},"two_plus_suits",1,"命中后切换花色；未命中不推进。","提前传递下一种花色，维持同一套缺门工具。"),
+  normal(2,"C","换班灯怪","获胜牌为黄色且不是上次命中者。","获胜牌为偶数。",{suit:"yellow",rotate:true},"even",1,"首击不限攻击者；未命中不清除记录。","至少两人分担黄色攻击，调数既能抢回合也能让回合。"),
+  normal(2,"W","绕线蛛","获胜牌为蓝色且不是上次命中者。","本回合至少有一张点数 ≤ 6 的牌。",{suit:"blue",rotate:true},"minimum_small",1,"首击不限攻击者；未命中不清除记录。","向另一名玩家传递蓝色攻击牌。"),
+  normal(3,"H","红石头王","获胜牌为红色且点数 ≥ 7，且不是上次命中者。","本回合至少有一张点数 ≤ 6 的牌。",{suit:"red",size:"large",rotate:true},"minimum_small",1,"首击不限攻击者；未命中不清除记录。","点数 ≥ 7 的牌组继续输出，通过传牌让第二名攻击者接手。"),
+  normal(3,"L","变色猫","获胜牌点数 ≤ 6，蓝色和绿色交替命中，从蓝色开始。","本回合同时有点数 ≤ 6 和点数 ≥ 7 的牌。",{phases:[{suit:"blue",size:"small"},{suit:"green",size:"small"}]},"both_sizes",2,"命中后切换形态；未命中不推进。","低点攻击工具跨色复用；点数 ≥ 7 的牌通过异色垫牌支援。"),
+  normal(3,"M","三色蛾","按绿、黄、蓝循环命中，且须换人。","本回合恰好两种花色。",{cycle:["green","yellow","blue"],rotate:true},"two_suits",2,"绿色开始，首击不限攻击者；命中后推进。","跨色传牌与换人接力；双色配合工具仍可沿用。"),
+  normal(3,"C","排队灯怪","以黄色获胜，且本轮标记中尚未命中过。","获胜牌为偶数。",{suit:"yellow",unique:true},"even",2,"命中后标记攻击者；四人全标记后清除。","向多名玩家分配黄色牌与调数能力，不能只供养一人。"),
+  normal(3,"W","伏击蛛","第三位出牌者以绿色获胜。","第四位出的牌为非绿色。",{suit:"green",position:2},"fourth_non_green",2,"第三位相对于本回合首家。","第三位接绿牌获胜，第四位缺绿后垫异色牌，为大蜘蛛节点练习。")
+];
+const basicNormals = [1,2,3].flatMap(stage => [
+  ["R","红甲虫","red","large","获胜牌点数 ≥ 7。"],
+  ["B","蓝鱼","blue","even","获胜牌为偶数。"],
+  ["G","绿毛球","green","two_plus_suits","本回合至少两种花色。"],
+  ["Y","黄毛怪","yellow","minimum_small","本回合至少有一张点数 ≤ 6 的牌。"]
+].map(([suffix,name,suit,extraRule,bonus])=>({
+  id:`N${stage}-${suffix}`,name:stage===1?name:stage===2?`大${name}`:`${name}王`,stage,type:"普通怪物",gate:{suit},
+  hit:`获胜牌为${{red:"红",blue:"蓝",green:"绿",yellow:"黄"}[suit]}色。`,bonus,extraRule,extra:1,
+  ...normalStages.find(x=>x.stage===stage),
+  state:"只在命中时更新最近命中者。",tools:"普通关维持花色基础门槛，通过生命递增考验构筑效率。"
+})));
+const normalMonsters = [1,2,3].flatMap(stage=>[
+  ...basicNormals.filter(n=>n.stage===stage),...addedNormals.filter(n=>n.stage===stage)
+]).map(n=>{
+  const lateHp={H:8,L:6,M:9,C:8,W:6};
+  if(n.stage===3)n={...n,hp:lateHp[n.id.split("-")[1]]??n.hp};
+  if(n.stage>1){
+    const simple={H:{suit:'red',size:'large'},L:{suit:'blue'},M:{suit:'green'},C:{suit:'yellow'},W:{suit:'green'}}[n.id.split('-')[1]];
+    if(simple){n={...n,gate:simple,hit:`获胜牌为${suits[simple.suit]}色${simple.size?'且点数 ≥ 7':''}。`,state:'无额外状态。',tools:'只检查本回合牌面；用调点、变色和传牌组织命中与追加。'};
+      if(n.id.endsWith('-W'))n={...n,extraRule:'minimum_small',bonus:'本回合至少有一张点数 ≤ 6 的牌。'};
+      if(n.id.endsWith('-M'))n={...n,extraRule:'two_plus_suits',bonus:'本回合至少两种花色。'};
+    }
+  }
+  if(n.stage!==1||!n.gate.suit)return n;
+  const first=n.gate.suit,second={red:"yellow",blue:"green",green:"red",yellow:"blue"}[first];
+  const {suit,...gate}=n.gate;
+  return {...n,gate:{...gate,suits:[first,second]},hit:`获胜牌为${suits[first]}色或${suits[second]}色。`,tools:`两种花色均可命中，无须交替；${n.tools}`};
+});
+const supply = [
+  ...cards.map(c=>({...c,type:"牌库牌"})),
+  ...equipment.map(c=>({...c,type:"装备"})),
+  ...consumables.map(c=>({...c,type:"消耗品"}))
+];
+
+function validateConfig() {
+  const assert = (v,m) => { if (!v) throw new Error(m); };
+  const all = [...startingCards,...supply,...nodes,...normalMonsters];
+  assert(new Set(all.map(x=>x.id)).size===all.length,"配置ID重复");
+  for (const stage of [4,8,12]) assert(nodes.filter(n=>n.stage===stage).length>0,"每个节点须有候选怪物");
+  for (const stage of [1,2,3]) assert(normalMonsters.filter(n=>n.stage===stage).length===9,"普通怪物每阶段须有九只（原四只加五只）");
+  assert(startingCards.length>=config.player_count*config.opening_hand+config.reserve_cards,"初始牌不足");
+  assert(config.small_max+1===config.large_min,"两个点数区间须连续");
+  assert(config.mirror_total===config.small_min+config.large_max,"翻点范围与有效点数不一致");
+  for(const n of [...nodes,...normalMonsters]) assert(n.hp>0&&n.reward>=0,"怪物数值无效");
+  return {starting:startingCards.length,cards:cards.reduce((n,c)=>n+c.quantity,0),equipment:equipment.length,consumables:consumables.length,nodes:nodes.length,normal:normalMonsters.length,supply:supply.reduce((n,x)=>n+x.quantity,0)};
+}
+
+return {parameters:parameters,config:config,openingHandForLevel:openingHandForLevel,nodes:nodes,normalStages:normalStages,normalMonsters:normalMonsters,supply:supply,validateConfig:validateConfig};
+})();
+modules.m3=(()=>{
+// 策略只接受botView生成的观测；未知牌采样不用游戏随机数或真实发牌分布。
+const evaluateTrick=(...args)=>modules.m4.evaluateTrick(...args);
+const choiceCards=(...args)=>modules.m4.choiceCards(...args);
+const monsterGate=(...args)=>modules.m4.monsterGate(...args);
+const advanceMonster=(...args)=>modules.m4.advanceMonster(...args);
+const trickWinner=(...args)=>modules.m4.trickWinner(...args);
+const {abilities,suits}=modules.m0;
+const {t}=modules.m1;
+const {openingHandForLevel}=modules.m2;
+const colors=Object.keys(suits).filter(s=>s!=='black'), timing=Object.fromEntries(abilities.map(a=>[a.id,a.timing]));
+const face=c=>({uid:c.uid,id:c.id,suit:c.suit,rank:c.rank,ability:c.ability,exhaust:!!c.exhaust,phantom:!!c.phantom,player:c.player,hidden:!!c.hidden});
+function botView(s,actor=s.current){
+ const revealed=s.trickHistory.at(-1)?.turn===s.turn;
+ return {actor,seed:0,level:s.level,turn:s.turn,hp:s.hp,monster:structuredClone(s.monster),memory:structuredClone(s.memory),leader:s.leader,current:s.current,lead:s.leadSuit,delayed:s.delayed,
+  hand:s.players[actor].hand.map(face),deck:s.deck.map(face),drawCount:s.draw.length,discard:s.discard.map(face),spent:s.spent.map(face),flask:s.flask?face(s.flask):null,
+  played:s.played.map(c=>c.hidden&&!revealed&&c.player!==actor?{player:c.player,hidden:true,excluded:!!c.excluded}:{...face(c),excluded:s.excluded.includes(c.uid),returned:s.returned.includes(c.uid)}),
+  players:s.players.map(p=>({count:p.hand.length,itemCount:p.items.length,gear:[...p.gear],tokens:structuredClone(p.tokens),uses:{...p.uses},noDraw:p.noDraw,watch:p.watch,notes:[...(p.notes||[])]})),
+  prep:structuredClone(s.prep),noFollow:[...s.noFollow],dice:[...s.dice],cloakPair:s.cloakPair?[...s.cloakPair]:null,sign:s.sign,signUsed:s.signUsed,pledge:s.pledge?{...s.pledge}:null,wardrum:s.wardrum,
+  known:{...(s.players[actor].botKnown||{})},items:s.players[actor].items.map(x=>({id:x.id,uid:x.uid})),itemTurn:s.players[actor].itemTurn,
+  lastTransfers:structuredClone(s.lastTransfers||{}),lastResult:s.lastResult?{winner:s.lastResult.winner,hit:s.lastResult.hit}:null};
+}
+const has=(v,p,id)=>v.players[p].gear.includes(id);
+const ab=(v,p,c)=>has(v,p,'GEAR_PLATE')?'none':c.ability;
+function wanted(v){const g=v.monster.gate,p=g.phases?.[v.memory.step%g.phases.length]||g;return {...p,suit:g.cycle?.[v.memory.step%g.cycle.length]||p.suit};}
+const accepted=(v,c)=>{const g=wanted(v);return (!g.suit||g.suit===c.suit)&&(!g.suits||g.suits.includes(c.suit))&&(!g.size||(g.size==='small'?c.rank<=6:c.rank>=7))&&(!g.echo||c.rank===v.memory.echoRank);};
+function canAttack(v,p,pos){const g=monsterGate(v.monster,v.memory);return (!g.rotate||v.memory.last!==p)&&(!g.unique||!v.memory.marks.includes(p))&&(g.position===undefined||g.position===pos);}
+function cardValue(v,c,p=v.actor){
+ const a=ab(v,p,c),g=wanted(v);return (accepted(v,c)?3:0)+(c.suit==='black'?3:0)+({change_self:4,low_self:g.size==='small'?5:1,adjust_self:2,adjust_two:2,mirror_self:2,draw_one:3,draft_two:3,distribute_three:4,relay_self:4,yield_relay:3,recover_spent:3,recover_low:3}[a]||0)
+ +(has(v,p,'GEAR_MIGHT')&&c.rank>=7?1:0)+(has(v,p,'GEAR_SPARK')&&c.rank<=6?1:0);
+}
+function randomFor(v){let x=2166136261;const key=JSON.stringify([v.actor,v.level,v.turn,v.memory,v.hand.map(c=>c.uid),v.played,v.players.map(p=>p.count),v.known]);for(let i=0;i<key.length;i++)x=Math.imul(x^key.charCodeAt(i),16777619)>>>0;return()=>{x=(Math.imul(x,1664525)+1013904223)>>>0;return x/4294967296;};}
+function shuffle(a,r){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function sampleWorlds(v,n=4){
+ const rng=randomFor(v),visible=[...v.hand,...v.discard,...v.spent,...v.played.filter(c=>c.uid&&!c.returned),...(v.flask?[v.flask]:[])],seen=new Set(visible.map(c=>c.uid));
+ return Array.from({length:n},()=>{let pool=shuffle(v.deck.filter(c=>!seen.has(c.uid)),rng);const hands=v.players.map(()=>[]);hands[v.actor]=v.hand.map(c=>({...c}));
+  for(const [uid,p] of Object.entries(v.known)){if(p===v.actor||seen.has(uid)||hands[p].length>=v.players[p].count)continue;const i=pool.findIndex(c=>c.uid===uid);if(i>=0)hands[p].push(pool.splice(i,1)[0]);}
+  const played=v.played.map(c=>{if(c.uid)return {...c};const i=pool.findIndex(x=>x.suit===v.lead);const pick=pool.splice(i>=0?i:0,1)[0]||{uid:'unknown',rank:1,suit:v.lead,ability:'none'};return {...pick,player:c.player,hidden:true,excluded:c.excluded};});
+  for(let p=0;p<4;p++)if(p!==v.actor)hands[p].push(...pool.splice(0,Math.max(0,v.players[p].count-hands[p].length)));
+  return {hands,played,draw:pool};
+ });
+}
+function legal(v,hand,c,opt,pos,lead){
+ if(opt.rope||v.noFollow.includes(c.player)||c.phantom)return true;
+ return c.suit==='black'||lead==='black'||pos===0||c.suit===lead||!hand.some(h=>h.uid!==c.uid&&h.suit===lead);
+}
+function candidates(v,hand,p,pos,lead,{rank=null,dye=false,smoke=false,blank=false}={},full=true){
+ const list=[];const sources=blank?[{uid:'bot-blank',suit:'red',rank:1,ability:'none',phantom:true}]:hand;
+ for(const original of sources){const a=ab(v,p,original), prep=v.prep[p]||{};let ranks=[{rank:original.rank,opt:{}}];
+  if(a==='mirror_self')ranks.push({rank:13-original.rank,opt:{mirror:true}});
+  if(a==='low_self')ranks.push(...Array.from({length:6},(_,i)=>({rank:i+1,opt:{low:i+1}})));
+  const expanded=[];
+  for(const r of ranks){let deltas=[{n:0,opt:{}}];if(a==='adjust_self'||a==='adjust_two'){const limit=a==='adjust_two'?2:3;deltas.push(...Array.from({length:limit*2+1},(_,i)=>i-limit).filter(Boolean).map(n=>({n,opt:{[a==='adjust_two'?'adjust2':'adjust']:n}})));}
+   if(v.players[p].tokens.rank?.expires===v.turn)deltas=deltas.flatMap(d=>[-3,0,3].map(n=>({n:d.n+n,opt:{...d.opt,...(n?{prepared:n}:{})}})));
+   const dice=full&&has(v,p,'GEAR_DICE')&&(v.players[p].uses.dice||0)<2?Array.from({length:12},(_,i)=>i+1):[];
+   for(const d of deltas)expanded.push({rank:Math.max(1,Math.min(12,(rank??prep.rank??r.rank)+d.n)),opt:{...r.opt,...d.opt}});
+   for(const n of dice)expanded.push({rank:rank??prep.rank??n,opt:{dice:n}});
+  }
+  if(blank){expanded.length=0;for(let n=1;n<=12;n++)expanded.push({rank:n,opt:{}});}
+  const change=blank||dye||prep.dye||a==='change_self'||v.players[p].tokens.suit?.expires===v.turn;
+  const cs=change&&original.suit!=='black'?colors:[original.suit];
+  for(const r of expanded)for(const suit of cs){const opt={...r.opt,...(!blank&&suit!==original.suit?{suit}:{})},c={...original,rank:r.rank,suit,player:p,hidden:false};
+   const options=[opt];if(full&&has(v,p,'GEAR_ROPE')&&(v.players[p].uses.rope||0)<3&&!blank)options.push({...opt,rope:true});
+   if(full&&pos===0&&has(v,p,'GEAR_STANDARD')&&!v.players[p].uses.standard&&!blank)options.push(...colors.map(s=>({...opt,standard:s})));
+   for(const o of options){const l=o.standard??lead;if(!legal(v,hand,c,o,pos,l))continue;const excluded=!!(o.rope||o.standard||smoke||prep.smoke);
+    const veil=pos>0&&!excluded&&(has(v,p,'GEAR_VEIL')&&(v.players[p].uses.veil||0)<2||has(v,p,'GEAR_CLOAK')&&(v.players[p].uses.cloak||0)<2||v.cloakPair?.[1]===null&&v.cloakPair[0]!==p);
+    list.push({card:{...c,excluded,hidden:!!veil},uid:original.uid,opt:{...o,...(veil?{veil:true}:{})},lead:o.standard??(pos===0?suit:lead),blank});
+   }
+  }
+ }
+ const unique=new Map();for(const x of list){const key=JSON.stringify([x.uid,x.card.rank,x.card.suit,x.card.excluded,x.lead,x.opt.dice!==undefined]);if(!unique.has(key))unique.set(key,x);}return [...unique.values()];
+}
+function partial(v,move,played){const cards=[...played,move.card],i=trickWinner(cards,move.lead,monsterGate(v.monster,v.memory).lowest),w=cards[i];if(!w)return -2;
+ const success=accepted(v,w)&&canAttack(v,w.player,i)||ab(v,w.player,w)==='forced_hit';
+ let value=(success?12:0)+(i===v.monster.gate.position?2:0)-move.card.rank/40;
+ if(v.monster.gate.position!==undefined&&cards.length<=v.monster.gate.position)value+=(move.card.suit==='green'&&canAttack(v,move.card.player,cards.length-1)?3:0);
+ if(success&&v.monster.collectColors&&colors.includes(w.suit)&&!(v.memory.colors||[]).includes(w.suit))value+=2;
+ if(move.card.excluded)value-=0.15;
+ return value;
+}
+const futureCandidates=new WeakMap();
+function futureMove(v,hand,p,played,lead){
+ let cache=futureCandidates.get(v);if(!cache){cache=new Map();futureCandidates.set(v,cache);}
+ const key=p+':'+played.length+':'+lead+':'+hand.map(c=>c.uid).join(',');
+ if(!cache.has(key))cache.set(key,candidates(v,hand,p,played.length,lead,{},false));
+ const options=[...cache.get(key)];return options.sort((a,b)=>partial(v,b,played)-partial(v,a,played)||cardValue(v,hand.find(c=>c.uid===a.uid),p)-cardValue(v,hand.find(c=>c.uid===b.uid),p))[0];}
+function damage(v,played,lead){
+ const suppressed=v.players.map((p,i)=>p.gear.includes('GEAR_PLATE')?i:-1).filter(i=>i>=0),r=evaluateTrick(v.monster,played,v.memory,lead,played.filter(c=>c.excluded).map(c=>c.uid),suppressed);
+ if(!r.hit)return {...r,damage:0};const p=r.winner,c=r.card,q=v.players[p];let d=r.damage+(q.tokens.attack?.amount||0)+(q.tokens.charge?.expires===v.turn?q.tokens.charge.amount:0);
+ if(ab(v,p,c)==='hit_bonus')d++;
+ if(has(v,p,'GEAR_MIGHT')&&c.rank>=7)d+=c.rank===12?3:1;
+ if(has(v,p,'GEAR_SPARK')&&c.rank<=6)d+=c.rank===1?3:1;
+ if(has(v,p,'GEAR_CUP'))d++;if(has(v,p,'GEAR_PLATE'))d+=2;
+ if(c.hidden)d+=2;if(v.cloakPair?.includes(p)||c.hidden&&has(v,p,'GEAR_CLOAK')&&!(has(v,p,'GEAR_VEIL')&&(q.uses.veil||0)<2))d+=2;
+ if(v.dice.includes(p)||c.botDice)d+=2;
+ const tuned=played.some(x=>x.player!==p&&x.suit===c.suit&&Math.abs(x.rank-c.rank)===1);
+ for(let i=0;i<4;i++){if(has(v,i,'GEAR_TUNEFORK')&&tuned)d+=2;if(has(v,i,'GEAR_DRUM')&&i!==p&&played.some(x=>x.player===i&&x.suit===c.suit))d++;if(has(v,i,'GEAR_BATON')&&(v.lastTransfers[i]||[]).includes(p))d+=2;if(has(v,i,'GEAR_BANNER')&&i!==p&&v.memory.last!==null&&v.memory.last!==p)d++;}
+ if(has(v,p,'GEAR_NOTES')&&q.notes.length>=3)d++;
+ if(v.sign===p&&!v.signUsed)d+=2;if(v.pledge?.player===p&&v.pledge.turn===v.turn)d+=2;
+ return {...r,damage:v.wardrum?d*2:d};
+}
+function otherOrder(v){const played=new Set(v.played.map(c=>c.player));const out=[];for(let i=1;i<=4;i++){const p=(v.actor+i)%4;if(p!==v.actor&&!played.has(p)&&p!==v.delayed)out.push(p);}if(v.delayed!==null&&v.delayed!==v.actor&&!played.has(v.delayed))out.push(v.delayed);return out;}
+function nextValue(v,hands,leader){if(hands.some(h=>!h.length))return 0;const played=[];let lead=null;for(let i=0;i<4;i++){const p=(leader+i)%4,x=futureMove(v,hands[p],p,played,lead);if(!x)return 0;if(!i)lead=x.lead;played.push(x.card);}return damage(v,played,lead).damage;}
+function scoreMove(v,m,world,nextCache){const hands=world.hands.map(h=>[...h]),played=world.played.map(c=>({...c}));if(!m.blank)hands[v.actor]=hands[v.actor].filter(c=>c.uid!==m.uid);
+ played.push({...m.card,botDice:m.opt.dice!==undefined});let lead=m.lead;
+ for(const p of otherOrder(v)){const x=futureMove(v,hands[p],p,played,lead);if(!x)return {score:-100,r:null};hands[p]=hands[p].filter(c=>c.uid!==x.uid);played.push(x.card);}
+ if(played.length!==4)return {score:-100,r:null};const r=damage(v,played,lead);
+ let score=Math.min(v.hp,r.damage)*6+(r.damage>=v.hp?20:0);
+ if(r.hit&&v.monster.collectColors&&colors.includes(r.card.suit)&&!(v.memory.colors||[]).includes(r.card.suit))score+=1.5;
+ // 下一回合仅作近似预估：传回本牌、剩余手牌、命中后的门槛推进。没有假装完整执行所有能力队列。
+ for(const c of played)if(ab(v,c.player,c)==='relay_self'||ab(v,c.player,c)==='yield_relay'&&r.winner!==c.player){const p=hands.map((h,i)=>({i,n:h.length})).filter(x=>x.i!==c.player).sort((a,b)=>a.n-b.n)[0].i;hands[p].push({...((v.deck.find(x=>x.uid===c.uid))||c),hidden:false,excluded:false});}
+ const a=ab(v,v.actor,m.card),drawAvailable=v.drawCount&&!v.players[v.actor].noDraw;
+ if(drawAvailable&&['draw_one','draft_two','distribute_three','gift_draw','hit_draw','yield_draw'].includes(a))score+=v.players[v.actor].count<=2?2:0.5;
+ if(['discard_charge','cycle','pass_charge'].includes(a)&&hands[v.actor].length<=1)score-=2;
+ if(r.damage<v.hp){const next={...v,turn:v.turn+1,memory:{...v.memory,marks:[...v.memory.marks]},players:v.players.map(p=>({...p,tokens:{...p.tokens},uses:{...p.uses},notes:[...p.notes]})),prep:{},dice:[],cloakPair:null,wardrum:false};
+  if(r.hit){delete next.players[r.winner].tokens.attack;if(v.sign===r.winner)next.signUsed=true;
+   if(has(v,r.winner,'GEAR_NOTES')&&r.card.suit!=='black'&&!next.players[r.winner].notes.includes(r.card.suit))next.players[r.winner].notes.push(r.card.suit);
+   }
+  next.memory=advanceMonster(v.monster,v.memory,r);
+  for(const c of played.slice(v.played.length))if(c.hidden){const player=next.players[c.player];if(has(v,c.player,'GEAR_VEIL')&&(player.uses.veil||0)<2)player.uses.veil=(player.uses.veil||0)+1;else if(has(v,c.player,'GEAR_CLOAK'))player.uses.cloak=(player.uses.cloak||0)+1;}
+  const key=JSON.stringify([hands.map(h=>h.map(c=>c.uid)),r.winner,next.memory,next.players,next.signUsed]);
+  if(!nextCache.has(key))nextCache.set(key,nextValue(next,hands,r.winner));
+  score+=Math.min(nextCache.get(key),v.hp-r.damage)*1.4;
+  if(hands.some(h=>!h.length))score-=2;
+ }
+ if(!m.blank)score-=cardValue(v,v.hand.find(c=>c.uid===m.uid))*0.13;
+ if(m.card.exhaust)score-=0.7;if(m.opt.rope||m.opt.standard)score-=0.12;if(m.opt.dice!==undefined)score-=r.winner===v.actor?0.1:1.8;
+ return {score,r};
+}
+function chooseMove(v,{worlds=sampleWorlds(v),virtual={}}={}){
+ let options=candidates(v,v.hand,v.actor,v.played.length,v.played.length?v.lead:null,virtual);
+ // 完整末家不剪枝；前面先留30个候选，保证网页Bot响应速度。
+ if(v.played.length<3&&options.length>30){
+  options.sort((a,b)=>partial(v,b,worlds[0].played)-partial(v,a,worlds[0].played)||cardValue(v,v.hand.find(c=>c.uid===a.uid)||a.card)-cardValue(v,v.hand.find(c=>c.uid===b.uid)||b.card));
+  const groups=new Map();for(const m of options){const k=m.opt.standard?'standard-'+m.opt.standard:m.opt.rope?'rope':m.opt.dice!==undefined?'dice':'plain';if(!groups.has(k))groups.set(k,[]);if(groups.get(k).length<2)groups.get(k).push(m);}
+  options=[...new Set([...options.slice(0,16),...[...groups.values()].flat()])];
+ }
+ const nextCache=new Map();let best=null;for(const m of options){const trials=worlds.map(w=>scoreMove(v,m,w,nextCache)),score=trials.reduce((n,t)=>n+t.score,0)/worlds.length,hits=trials.filter(t=>t.r?.hit).length/worlds.length,kill=trials.filter(t=>t.r?.damage>=v.hp).length/worlds.length;
+  if(!best||score>best.score+1e-8)best={...m,score,hits,kill,hitPlayers:trials.map(x=>x.r?.hit?x.r.winner:null)};
+ }return best;
+}
+function predictAttacker(v,worlds=sampleWorlds(v)){const counts=[0,0,0,0];for(const w of worlds){const played=[];let lead=null;for(let i=0;i<4;i++){const p=(v.leader+i)%4,x=futureMove(v,w.hands[p],p,played,lead);if(!x)break;if(!i)lead=x.lead;played.push(x.card);}if(played.length===4){const r=damage(v,played,lead);if(r.hit)counts[r.winner]++;}}return counts.map((n,i)=>({i,n})).sort((a,b)=>b.n-a.n);}
+function delayedValue(v,worlds){let score=0;for(const w of worlds){const played=w.played.map(c=>({...c})),hands=w.hands.map(h=>[...h]);for(const p of otherOrder(v)){const x=futureMove(v,hands[p],p,played,v.lead);if(!x)continue;hands[p]=hands[p].filter(c=>c.uid!==x.uid);played.push(x.card);}const delayed={...v,played,delayed:v.actor};const x=chooseMove(delayed,{worlds:[{...w,hands,played}]});score+=x?.score??-100;}return score/worlds.length;}
+function planTurn(v){
+ const worlds=sampleWorlds(v),best=chooseMove(v,{worlds});if(!best)return null;
+ if(v.played.length>0&&v.played.length<3&&v.delayed===null&&has(v,v.actor,'GEAR_MALLET')&&(v.players[v.actor].uses.mallet||0)<2&&delayedValue(v,worlds)>best.score+0.5)return {action:'delay',score:best.score};
+ if(v.itemTurn!==v.turn){let selected=null;
+  for(const item of v.items){let candidate=null;
+   if(item.id==='ITEM_DYE')candidate=chooseMove(v,{worlds,virtual:{dye:true}});
+   if(item.id==='ITEM_RULER'){for(let rank=1;rank<=12;rank++){const x=chooseMove(v,{worlds,virtual:{rank}});if(x&&(!candidate||x.score>candidate.score))candidate={...x,itemChoice:{rank}};}}
+   if(item.id==='ITEM_BLANK')candidate=chooseMove(v,{worlds,virtual:{blank:true}});
+   if(item.id==='ITEM_SMOKE')candidate=chooseMove(v,{worlds,virtual:{smoke:true}});
+   if(item.id==='ITEM_WARDRUM'&&best.hits>=0.5)candidate=chooseMove({...v,wardrum:true},{worlds});
+   if(item.id==='ITEM_YIELD')for(const p of otherOrder(v)){const x=chooseMove({...v,noFollow:[...v.noFollow,p]},{worlds});if(x&&(!candidate||x.score>candidate.score))candidate={...x,itemChoice:{target:p}};}
+   if(candidate&&candidate.score>best.score+1.2&&(!selected||candidate.score>selected.score))selected={action:'item',uid:item.uid,id:item.id,score:candidate.score,choice:candidate.itemChoice||(item.id==='ITEM_BLANK'?{suit:candidate.card.suit,rank:candidate.card.rank}:null)};
+  }
+  if(selected)return selected;
+  const supply=v.items.find(x=>x.id==='ITEM_SUPPLY');if(supply&&v.hand.length<=3&&v.drawCount>=2&&!v.players[v.actor].noDraw&&best.kill<0.8)return {action:'item',uid:supply.uid,id:supply.id};
+  const bell=v.items.find(x=>x.id==='ITEM_BELL');if(bell&&v.hand.length>=2&&v.turn===1&&v.hand.some(c=>accepted(v,c))){const target=otherOrder(v)[0]??(v.actor+1)%4;return {action:'item',uid:bell.uid,id:bell.id,choice:{target}};}
+ }
+ return {action:'play',...best};
+}
+function playBot(g){const v=botView(g.s),plan=planTurn(v);if(!plan)throw Error(t("bot.no_legal_card"));g.lastBotDecision=plan;
+ if(plan.action==='delay'){g.delayPlay();return;}if(plan.action==='item'){g.s.players[v.actor].botItemChoice=plan.choice;g.useItem(plan.uid);return;}g.play(plan.uid,plan.opt);
+}
+const fewest=(v,other=false,draw=false)=>v.players.map((p,i)=>({i,n:p.count-(v.played.some(c=>c.player===i)?0:1)})).filter(x=>(!other||x.i!==v.actor)&&(!draw||!v.players[x.i].noDraw)).sort((a,b)=>a.n-b.n);
+function nextLeader(v,other=false){const worlds=sampleWorlds(v);return v.players.map((p,i)=>({i,n:p.count,score:worlds.reduce((s,w)=>s+nextValue(v,w.hands,i),0)/worlds.length})).filter(x=>(!other||x.i!==v.actor)&&x.n>0).sort((a,b)=>b.score-a.score)[0]?.i??fewest(v,other)[0].i;}
+// A proof for a narrow closed relay pool, not a timeout or an omniscient hand scan.
+function closedRelayCannotHit(v){
+ if(v.flask||v.played.length!==4||v.players.some(p=>p.count||p.itemCount||Object.keys(p.tokens).length))return false;
+ const inert=new Set(['GEAR_DRUM','GEAR_BANNER','GEAR_SCOPE']);
+ if(v.players.some(p=>p.gear.some(id=>!inert.has(id)))||Object.values(v.prep).some(x=>Object.keys(x).length))return false;
+ const pool=v.played.map(c=>v.deck.find(x=>x.uid===c.uid));
+ if(pool.some((c,i)=>!c||v.played[i].returned||ab(v,v.played[i].player,c)!=='relay_self'))return false;
+ return pool.every(c=>c.suit!=='black'&&!accepted(v,c));
+}
+function resolveBot(g){const s=g.s,q=s.pending,v=botView(s,q.player),p=s.players[q.player],own=v.hand.length,id=q.id;
+ const source=choiceCards(s);let target=fewest(v,true)[0]?.i??q.player,choice={target,target2:fewest(v,true).find(x=>x.i!==target)?.i};
+ if(q.step==='offer'){
+  let skip=s.hp<=0;
+  if(id==='relay_self'&&closedRelayCannotHit(v))skip=true;
+  if(['cycle','item_supply','prune_draw'].includes(id)&&(!v.drawCount||p.noDraw))skip=true;
+  if(['discard_charge','pass_charge','draw_pass'].includes(id)&&own<=1&&s.hp>0)skip=true;
+  if(id==='draft_two'&&own<=1&&(!v.drawCount||p.noDraw))skip=true;
+  if(id==='pass_high'&&own<=1&&(!v.drawCount||p.noDraw))skip=true;
+  if(id==='hammer_offer')skip=s.hp>3&&own<3;
+  if(id==='axe_offer')skip=v.deck.length<=4*openingHandForLevel(Math.min(12,v.level+1));
+  if(id==='flask_offer'&&!v.flask)skip=own===0||own>2||!source.length;
+  if(id==='seat_offer'){const pos=v.monster.gate.position,seat=(v.leader+(pos??0))%4;skip=pos===undefined||seat===q.player||!v.hand.some(c=>accepted(v,c));p.botItemChoice={target:seat};}
+  if(id==='pledge_offer'){const prediction=predictAttacker(v)[0];skip=prediction.n<2;p.botItemChoice={target:prediction.i,turn:v.turn};}
+  if(id==='mulligan_offer')skip=v.hand.some(c=>accepted(v,c)&&canAttack(v,v.actor,(v.actor-v.leader+4)%4))||v.hand.some(c=>['change_self','low_self','draw_one','draft_two'].includes(ab(v,v.actor,c)));
+  if(id==='advance_offer')skip=v.drawCount===0||v.hand.some(c=>['draw_one','distribute_three'].includes(ab(v,v.actor,c)));
+  if(id==='knot_offer')skip=own<2||!v.hand.some(c=>!accepted(v,c))||!v.players.some((x,i)=>i!==q.player&&x.count>0);
+  if(id==='tube_offer')skip=!v.hand.length;
+  if(id==='shell_offer'){const ownCard=v.played.find(c=>c.player===v.actor);skip=skip||!v.played.some(c=>c.player!==v.actor&&timing[ab(v,c.player,c)]==='回合结束时'&&(!['relay_self','yield_relay'].includes(c.ability)||ownCard&&!ownCard.exhaust&&!s.returned.includes(ownCard.uid)));}
+  g.lastBotDecision={action:skip&&!q.mandatory?'skip':'activate',id};g.resolve(skip&&!q.mandatory?{skip:true}:{activate:true});return;
+ }
+ if(['item_rank','item_blank','item_yield','item_bell','seat_offer','pledge_offer'].includes(id)&&p.botItemChoice){choice={...choice,...p.botItemChoice};p.botItemChoice=null;g.resolve(choice);return;}
+ if(id==='item_rank'){let best=null;for(let rank=1;rank<=12;rank++){const x=chooseMove(v,{virtual:{rank}});if(x&&(!best||x.score>best.score))best={rank,score:x.score};}g.resolve({rank:best?.rank??6});return;}
+ if(id==='item_blank'){const x=chooseMove(v,{virtual:{blank:true}});g.resolve({suit:x.card.suit,rank:x.card.rank});return;}
+ if(q.step==='targets'){const eligible=v.players.map((p,i)=>({i,n:p.count})).filter(x=>x.n>0).sort((a,b)=>a.n-b.n);target=own?v.actor:eligible[0]?.i;const other=eligible.find(x=>x.i!==target)?.i;g.resolve({target,target2:other});return;}
+ if(id==='scope_offer'){const top=q.top.map(uid=>v.deck.find(c=>c.uid===uid)).filter(Boolean);top.sort((a,b)=>cardValue(v,b)-cardValue(v,a));g.resolve({order:top.map(c=>c.uid)});return;}
+ if(id==='sign_offer')target=predictAttacker(v)[0].i;
+ if(id==='whistle_offer')target=nextLeader(v,true);
+ if(['prepare_suit','prepare_rank','charge_offer'].includes(id))target=predictAttacker({...v,turn:v.turn+1,leader:s.whistleTo??v.lastResult?.winner??v.leader,prep:{},dice:[]})[0].i;
+ if(id==='gift_draw')target=fewest(v,true,true)[0]?.i??target;
+ if(['recover_one','recover_spent','recover_low'].includes(id))target=fewest(v)[0].i;
+ if(id==='tube_offer')target=nextLeader(v,true);
+ if(['exchange','knot_offer'].includes(id)&&q.target!==undefined)target=q.step==='receive'?q.from:q.target;
+ if(id==='pass_clockwise')target=(q.player+1)%4;
+ const passing=['pass_clockwise','draw_pass','draft_two','pass_charge','pass_high','exchange','knot_offer'].includes(id),discarding=['cycle','item_supply','discard_charge','prune_draw','hammer_offer','dice_penalty','axe_offer'].includes(id);
+ const cards=[...source].sort((a,b)=>{const av=cardValue(v,a),bv=cardValue(v,b);return discarding?av-bv:passing?(av-cardValue(v,a,target))-(bv-cardValue(v,b,target)):bv-av;});
+ choice={...choice,target,card:cards[0]?.uid,rank:6,turn:v.turn};
+ if(['pouch','distribute_three'].includes(id)&&q.drawn?.length===1)choice.give=own>v.players[target].count+1;
+ if(id==='shell_offer'){const ownCard=v.played.find(c=>c.player===v.actor);const priorities={recover_spent:6,recover_low:6,relay_self:5,yield_relay:4,hit_draw:3,yield_draw:3,prepare_suit:2};const valid=source.filter(c=>!['relay_self','yield_relay'].includes(ab(v,c.player,c))||ownCard&&!ownCard.exhaust&&!s.returned.includes(ownCard.uid));choice.card=valid.sort((a,b)=>(priorities[b.ability]||0)-(priorities[a.ability]||0))[0]?.uid;if(!choice.card)choice.card=source[0]?.uid;}
+ g.lastBotDecision={action:'resolve',id,choice};g.resolve(choice);
+}
+
+return {botView:botView,wanted:wanted,cardValue:cardValue,sampleWorlds:sampleWorlds,chooseMove:chooseMove,planTurn:planTurn,playBot:playBot,closedRelayCannotHit:closedRelayCannotHit,resolveBot:resolveBot};
+})();
+modules.m4=(()=>{
+const {playBot,resolveBot}=modules.m3;
+const {abilities,startingCards,equipment,consumables,suits}=modules.m0;
+const {t}=modules.m1;
+const {config:C,nodes,normalMonsters,supply,validateConfig,openingHandForLevel}=modules.m2;
+const abilityById = Object.fromEntries(abilities.map(x=>[x.id,x]));
+const gearById = Object.fromEntries(equipment.map(x=>[x.id,x]));
+const itemById = Object.fromEntries(consumables.map(x=>[x.id,x]));
+const check = (ok,message) => { if(!ok) throw new Error(message); };
+const cardLabel = c => `${suits[c.suit]}${c.rank} · ${c.name}`;
+const small = n => n>=C.small_min && n<=C.small_max;
+const large = n => n>=C.large_min && n<=C.large_max;
+const clamp = n=>Math.max(C.small_min,Math.min(C.large_max,n));
+// 重甲：持有者打出的牌只剩花色和点数，卡面效果一律不发动。
+const plated = p => p.gear.includes("GEAR_PLATE");
+const has = (p,id) => p.gear.includes(id);
+function acceptsSuit(gate,step,suit){
+  const phase=gate.phases?.[step%gate.phases.length]||gate;
+  const wanted=gate.cycle?.[step%gate.cycle.length]||phase.suit;
+  return (!wanted||suit===wanted)&&(!phase.suits||phase.suits.includes(suit));
+}
+function monsterGate(monster,memory){const g=monster.gate;return {...g,...(g.phases?.[memory.step%g.phases.length]||{})};}
+const ordinaryColors=['red','blue','green','yellow'];
+function colorsAfterHit(memory,card){return [...new Set([...(memory.colors||[]),...(ordinaryColors.includes(card.suit)?[card.suit]:[])])];}
+// 破绽标记（monster.breach）就是 step 在两个面之间来回翻，只有命中才翻。
+// 没有计时器：标记放上去之后一直留着，直到有人按破绽面的条件命中把它用掉。
+function advanceMonster(monster,memory,result){
+ const next={...memory,marks:[...memory.marks]};
+ if(result.hit){next.last=result.winner;next.step++;
+  if(monster.breach&&monster.gate.phases.some(p=>p.echo)&&memory.step%2===0)next.echoRank=result.card.rank;
+  if(monster.collectColors&&ordinaryColors.includes(result.card.suit)){
+   next.colors=colorsAfterHit(memory,result.card);if(next.colors.length>=monster.collectColors)next.colors=[];
+  }
+  if(monster.gate.unique){if(!next.marks.includes(result.winner))next.marks.push(result.winner);if(next.marks.length===4)next.marks=[];}
+ }
+ return next;
+}
+// 同一判定供真实结算和Bot的未出齐预估使用。黑牌优先且始终比大。
+function trickWinner(played,leadSuit,lowest=false,excluded=[]){
+ let winner=-1;
+ for(let i=0;i<played.length;i++){
+  const c=played[i];if(c.excluded||excluded.includes(c.uid))continue;
+  if(winner<0){winner=i;continue;}const b=played[winner];
+  if(c.suit==='black'&&(b.suit!=='black'||c.rank>b.rank)||b.suit!=='black'&&c.suit===leadSuit&&(b.suit!==leadSuit||(lowest?c.rank<b.rank:c.rank>b.rank)))winner=i;
+ }
+ return winner;
+}
+function evaluateTrick(monster,played,memory={step:0,last:null,marks:[]},leadSuit=played[0].suit,excluded=[],suppressed=[]) {
+ check(played.length===4,t("engine.top.err1"));
+ const gate=monsterGate(monster,memory),winner=Math.max(0,trickWinner(played,leadSuit,gate.lowest,excluded)),card=played[winner];
+ const forced=card.ability==="forced_hit"&&!suppressed.includes(card.player);
+ const hit=forced||acceptsSuit(gate,memory.step,card.suit)&&(!gate.size||(gate.size==="small"?small(card.rank):large(card.rank)))
+  &&(!gate.echo||card.rank===memory.echoRank)&&(!gate.rotate||memory.last===null||card.player!==memory.last)
+  &&(!gate.unique||!memory.marks.includes(card.player))&&(gate.position===undefined||winner===gate.position);
+ const ranks=played.map(x=>x.rank),numSuits=new Set(played.map(x=>x.suit)).size;
+ const asc=ranks.slice(1).every((n,i)=>n>ranks[i]),desc=ranks.slice(1).every((n,i)=>n<ranks[i]);
+ const extraConditions={collected_colors:monster.collectColors&&ordinaryColors.includes(card.suit)&&colorsAfterHit(memory,card).length>=monster.collectColors,
+  breach:monster.breach&&memory.step%2===1,large:large(card.rank),small:small(card.rank),two_plus_suits:numSuits>=2,two_suits:numSuits===2,three_suits:numSuits===3,
+  new_attacker:memory.last!==null&&card.player!==memory.last,minimum_small:small(Math.min(...ranks)),ordered:asc||desc,ascending:asc,fourth_non_green:played[3].suit!=="green",even:card.rank%2===0,both_sizes:ranks.some(small)&&ranks.some(large)};
+ const extra=!forced&&hit&&extraConditions[monster.extraRule]?monster.extra:0;
+ return {winner:card.player,position:winner,card,hit,extra,damage:hit?C.hit_damage+extra:0};
+}
+
+const choiceCards = s => {
+ const q=s.pending,p=s.players[q.player];
+ if(q.drawn)return q.drawn;
+ if(q.id==="recover_one")return s.discard;
+ if(q.id==="recover_spent")return s.spent;
+ if(q.id==="recover_low")return s.spent.filter(c=>c.rank<=6);
+ if(q.id==="pass_high")return p.hand.filter(c=>c.rank>=7);
+ if(q.id==="axe_offer")return s.played.filter(c=>!s.returned.includes(c.uid));
+ if(q.id==="flask_offer")return s.flask?[s.flask]:s.played.filter(c=>c.player===q.player&&!c.phantom&&!c.exhaust&&!s.returned.includes(c.uid));
+ if(q.id==="shell_offer")return q.options||[];
+ return p.hand;
+};
+
+class Game {
+  constructor(seed=Date.now()) {
+    validateConfig(); this.seed=Number(seed)>>>0; this.rng=this.seed||1;
+    this.s={phase:"setup",mode:"solo",level:1,gold:C.starting_gold,retries:C.initial_retries,players:Array.from({length:4},(_,i)=>({name:t("common.player",{p1:i+1}),hand:[],gear:[],items:[],tokens:{},uses:{},itemTurn:0,intel:[]})),logs:[],deck:[],market:[],supply:[],supplyDiscard:[],retired:[],jobs:[],pending:null};
+  }
+  random(){this.rng=(Math.imul(1664525,this.rng)+1013904223)>>>0;return this.rng/4294967296;}
+  shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(this.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+  log(text){this.s.logs.unshift(text);this.s.logs=this.s.logs.slice(0,100);}
+  start(mode="solo"){
+    check(this.s.phase==="setup",t("engine.start.err1"));const s=this.s;s.mode=mode;
+    s.nodes=[4,8,12].map(stage=>this.shuffle(nodes.filter(n=>n.stage===stage))[0]);
+    s.deck=startingCards.map(c=>({...c,uid:c.id}));
+    s.supply=this.shuffle(supply.flatMap(x=>Array.from({length:x.quantity},(_,i)=>({...x,uid:`${x.id}_${i+1}`}))));
+    s.phase="shop";s.deleted=false;this.fillMarket();this.log(t("engine.start.log1",{p1:this.seed,p2:s.gold}));
+  }
+  refillSupply(){const s=this.s;if(!s.supply.length&&s.supplyDiscard.length){s.supply=this.shuffle(s.supplyDiscard);s.supplyDiscard=[];}}
+  fillMarket(){const s=this.s;for(let i=0;i<C.market_slots;i++)if(!s.market[i]){this.refillSupply();s.market[i]=s.supply.pop()||null;}}
+  buy(index,owner=0,replace=null){
+    const s=this.s;check(s.phase==="shop",t("engine.buy.err1"));const x=s.market[index],p=s.players[owner];check(x&&p,t("engine.buy.err2"));check(s.gold>=x.price,t("common.no_gold"));
+    if(x.type==="装备"){
+      if(p.gear.length>=C.equipment_slots){const i=p.gear.indexOf(replace);check(i>=0,t("engine.buy.err4"));s.retired.push(p.gear.splice(i,1)[0]);}p.gear.push(x.id);
+    }else if(x.type==="消耗品"){check(p.items.length<C.consumable_slots,t("engine.buy.err5"));p.items.push(x);}
+    else s.deck.push({...x});
+    s.gold-=x.price;s.market[index]=null;this.log(x.type==="牌库牌"?t("engine.buy.log_deck",{p1:x.name}):t("engine.buy.log_owner",{p1:x.name,p2:owner+1}));
+  }
+  refresh(){const s=this.s;check(s.phase==="shop"&&s.gold>=C.market_refresh_cost,t("engine.refresh.err1"));s.gold-=C.market_refresh_cost;s.supplyDiscard.push(...s.market.filter(Boolean));s.market=[];this.fillMarket();}
+  deleteCard(uid){const s=this.s;check(s.phase==="shop"&&!s.deleted,t("engine.deleteCard.err1"));check(s.gold>=C.deck_delete_cost,t("common.no_gold"));const i=s.deck.findIndex(c=>c.uid===uid);check(i>=0,t("engine.deleteCard.err3"));s.deck.splice(i,1);s.gold-=C.deck_delete_cost;s.deleted=true;this.log(t("engine.deleteCard.log1"));}
+  leaveShop(){check(this.s.phase==="shop",t("engine.leaveShop.err1"));this.s.gold=Math.min(this.s.gold,C.carry_gold_cap);this.startBattle(false);}
+  startBattle(retry){
+    const s=this.s;check(s.deck.length>=C.player_count*openingHandForLevel(s.level),t("engine.startBattle.err1"));
+    if(s.seats?.some((original,i)=>original!==i)){const before=s.players;s.players=s.seats.map((_,original)=>before[s.seats.indexOf(original)]);}
+    if(!retry)s.monster=s.level%4===0?s.nodes[s.level/4-1]:this.shuffle(normalMonsters.filter(n=>n.stage===Math.ceil(s.level/4)))[0];
+    s.hp=s.monster.hp;s.memory={step:0,last:null,marks:[]};s.turn=1;s.leader=(s.level-1)%4;s.current=s.leader;s.played=[];s.returned=[];s.discard=[];s.spent=[];s.jobs=[];s.pending=null;s.prep={};s.lastResult=null;s.lastPlayed=[];s.trickHistory=[];
+    s.excluded=[];s.noFollow=[];s.delayed=null;s.declaredLead=null;s.dice=[];s.cloakPair=null;
+    s.flask=null;s.sign=null;s.signUsed=false;s.pledge=null;s.wardrum=false;s.phantoms=[];
+    s.transfers={};s.lastTransfers={};s.seats=[0,1,2,3];
+    s.phase="combat";
+    s.draw=this.shuffle(s.deck);
+    for(const p of s.players){p.hand=s.draw.splice(0,Math.max(0,openingHandForLevel(s.level)-(has(p,"GEAR_CUP")?1:0)));p.tokens={};p.uses={};p.itemTurn=0;p.intel=[];p.notes=[];p.watch=false;p.noDraw=false;p.botKnown={};p.botTop=[];p.botItemChoice=null;}
+    // 战斗开始与发牌后的一次性窗口：预支、调度令、单筒镜、换位符、军令状、暗号板。
+    s.jobs=[];
+    for(let i=0;i<4;i++){const q=s.players[i];
+      if(q.items.some(x=>x.id==="ITEM_ADVANCE"))s.jobs.push({player:i,person:s.seats[i],id:"advance_offer"});
+      if(q.items.some(x=>x.id==="ITEM_MULLIGAN"))s.jobs.push({player:i,person:s.seats[i],id:"mulligan_offer"});
+      if(has(q,"GEAR_SCOPE")&&!q.uses.scope)s.jobs.push({player:i,person:s.seats[i],id:"scope_offer"});
+      if(q.items.some(x=>x.id==="ITEM_SEAT"))s.jobs.push({player:i,person:s.seats[i],id:"seat_offer"});
+      if(q.items.some(x=>x.id==="ITEM_PLEDGE"))s.jobs.push({player:i,person:s.seats[i],id:"pledge_offer"});
+      if(has(q,"GEAR_SIGN")&&!q.uses.sign)s.jobs.push({player:i,person:s.seats[i],id:"sign_offer"});
+    }
+    if(s.jobs.length){s.afterJobs="prebattle";this.nextJob();}
+    this.log(t("engine.startBattle.log1",{p1:s.level,p2:s.monster.name,p3:s.hp,p4:retry?t("engine.startBattle.retry_mark"):""}));
+  }
+  retry(){check(this.s.phase==="retry",t("engine.retry.err1"));this.startBattle(true);}
+  forgetHand(player){for(const p of this.s.players)for(const [uid,owner] of Object.entries(p.botKnown||{}))if(owner===player)delete p.botKnown[uid];}
+  observe(cards,owner,viewers=[0,1,2,3]){for(const i of viewers){const p=this.s.players[i];p.botKnown||={};for(const c of cards)p.botKnown[c.uid]=owner;}}
+  takeDraw(n,player=null){
+    if(player!==null&&this.s.players[player].noDraw)return [];
+    const got=this.s.draw.splice(0,n);
+    for(let i=0;i<4;i++){const p=this.s.players[i],top=p.botTop||[];
+      if(player!==null)this.observe(got.filter(c=>top.includes(c.uid)),player,[i]);
+      p.botTop=top.slice(got.length);
+    }
+    return got;
+  }
+  token(player,type,amount=1){const p=this.s.players[player];const old=p.tokens[type];p.tokens[type]={expires:this.s.turn+1,amount:type==="charge"&&old?.expires===this.s.turn+1?old.amount+amount:amount};}
+  addAttack(player){const p=this.s.players[player];p.tokens.attack={amount:(p.tokens.attack?.amount||0)+1};}
+  hasToken(player,type){return this.s.players[player].tokens[type]?.expires===this.s.turn;}
+  // 重甲持有者打出的牌视为无技能。
+  ability(player,card){return plated(this.s.players[player])?"none":card.ability;}
+  veilSource(player){
+    const s=this.s,p=s.players[player];
+    if(has(p,"GEAR_VEIL")&&(p.uses.veil||0)<2)return "veil";
+    if(has(p,"GEAR_CLOAK")&&(p.uses.cloak||0)<2)return "cloak";
+    // 斗篷持有者本回合已暗置时，可带一名同伴一起暗置。
+    if(s.cloakPair&&s.cloakPair[0]!==player&&s.cloakPair[1]===null)return "partner";
+    return null;
+  }
+  modified(player,card,options={}){
+    const p=this.s.players[player],prep=this.s.prep[player]||{};let rank=card.rank,suit=card.suit;
+    const ab=this.ability(player,card);
+    if(options.mirror){check(ab==="mirror_self",t("engine.modified.err1"));rank=C.mirror_total-rank;}
+    if(options.low!==undefined){check(ab==="low_self"&&Number.isInteger(options.low)&&options.low>=1&&options.low<=6,t("engine.modified.err2"));rank=options.low;}
+    if(options.dice!==undefined){check(has(p,"GEAR_DICE")&&(p.uses.dice||0)<2,t("engine.modified.err3"));check(Number.isInteger(options.dice)&&options.dice>=C.small_min&&options.dice<=C.large_max,t("engine.modified.err4"));rank=options.dice;}
+    if(prep.rank!==undefined)rank=prep.rank;
+    for(const [key,limit,allowed] of [["adjust",3,ab==="adjust_self"],["adjust2",2,ab==="adjust_two"],["prepared",3,this.hasToken(player,"rank")]]){
+      const d=Number(options[key]||0);check(Number.isInteger(d)&&Math.abs(d)<=limit&&(!d||allowed),t("engine.modified.err5"));rank+=d;
+    }
+    if(options.suit){check(options.suit!=="black"&&card.suit!=="black"&&Object.hasOwn(suits,options.suit),t("common.bad_suit"));check(ab==="change_self"||this.hasToken(player,"suit")||prep.dye,t("engine.modified.err7"));suit=options.suit;}
+    if(options.rope!==undefined)check(has(p,"GEAR_ROPE")&&(p.uses.rope||0)<3,t("engine.modified.err8"));
+    if(options.standard!==undefined){check(has(p,"GEAR_STANDARD")&&!p.uses.standard,t("engine.modified.err9"));check(!this.s.played.length,t("engine.modified.err10"));check(options.standard!=="black"&&Object.hasOwn(suits,options.standard),t("common.bad_suit"));}
+    if(options.veil)check(this.veilSource(player)&&this.s.played.length>0,t("engine.modified.err12"));
+    return {...card,rank:clamp(rank),suit,player,hidden:!!options.veil};
+  }
+  canPlay(player,card,options={}){
+    try{const s=this.s,c=this.modified(player,card,options),lead=s.leadSuit;
+      if(options.rope!==undefined||s.noFollow.includes(player))return true;
+      return c.suit==="black"||lead==="black"||(!s.played.length&&s.declaredLead===null)||c.suit===(s.played.length?lead:s.declaredLead)||!s.players[player].hand.some(h=>h.uid!==card.uid&&h.suit===(s.played.length?lead:s.declaredLead));
+    }catch{return false;}
+  }
+  play(uid,options={}){
+    const s=this.s;check(s.phase==="combat",t("engine.play.err1"));const p=s.players[s.current],i=p.hand.findIndex(c=>c.uid===uid);check(i>=0,t("common.pick_own_card"));
+    const card=p.hand[i];check(this.canPlay(s.current,card,options),t("engine.play.err3"));
+    const out=this.modified(s.current,card,options);this.forgetHand(s.current);p.hand.splice(i,1);
+    if(out.hidden){const src=this.veilSource(s.current);
+      if(src==="veil")p.uses.veil=(p.uses.veil||0)+1;
+      else if(src==="cloak"){p.uses.cloak=(p.uses.cloak||0)+1;s.cloakPair=[s.current,null];}
+      else if(src==="partner")s.cloakPair[1]=s.current;
+    }
+    if(options.rope!==undefined){p.uses.rope=(p.uses.rope||0)+1;s.excluded.push(out.uid);this.log(t("engine.play.log1",{p1:s.current+1}));}
+    if(options.standard!==undefined){p.uses.standard=1;s.declaredLead=options.standard;s.excluded.push(out.uid);this.log(t("engine.play.log2",{p1:s.current+1,p2:suits[options.standard]}));}
+    if(options.dice!==undefined){p.uses.dice=(p.uses.dice||0)+1;s.dice.push(s.current);}
+    if(s.prep[s.current]?.smoke)s.excluded.push(out.uid);
+    if(!s.played.length)s.leadSuit=s.declaredLead??out.suit;
+    out.excluded=s.excluded.includes(out.uid);s.played.push(out);s.prep[s.current]={};
+    this.log(out.hidden?t("engine.play.log_hidden",{p1:out.player+1}):t("engine.play.log_open",{p1:out.player+1,p2:suits[out.suit],p3:out.rank}));
+    if(abilityById[this.ability(out.player,card)]?.timing==="打出时"&&!out.hidden){
+      s.jobs.push({player:out.player,id:card.ability,cardId:card.uid});s.afterJobs="play";this.nextJob();
+    }else this.advancePlay();
+  }
+  // 鼓槌：轮到自己时可以延后，等其他人出完再出。
+  delayPlay(){
+    const s=this.s,p=s.players[s.current];check(s.phase==="combat",t("engine.delayPlay.err1"));
+    check(has(p,"GEAR_MALLET")&&(p.uses.mallet||0)<2,t("engine.delayPlay.err2"));
+    check(s.played.length>0,t("engine.delayPlay.err3"));check(s.delayed===null,t("engine.delayPlay.err4"));
+    p.uses.mallet=(p.uses.mallet||0)+1;s.delayed=s.current;this.log(t("engine.delayPlay.log1",{p1:s.current+1}));
+    this.advancePlay();
+  }
+  advancePlay(){
+    const s=this.s;s.phase="combat";s.afterJobs=null;
+    if(s.played.length<4){
+      if(s.played.length===3&&s.delayed!==null)s.current=s.delayed;
+      else{let n=(s.current+1)%4;if(n===s.delayed)n=(n+1)%4;s.current=n;}
+      if(!s.players[s.current].hand.length)this.fail(t("engine.fail.reason_now"));
+      return;
+    }
+    s.jobs=s.played.filter(c=>c.hidden&&abilityById[this.ability(c.player,c)]?.timing==="打出时").map(c=>({player:c.player,id:this.ability(c.player,c),cardId:c.uid}));
+    s.afterJobs="reveal";this.nextJob();
+  }
+  finishTrick(){
+    const s=this.s,suppressed=s.players.map((q,i)=>plated(q)?i:-1).filter(i=>i>=0);
+    const r=evaluateTrick(s.monster,s.played,s.memory,s.leadSuit,s.excluded,suppressed),p=s.players[r.winner];
+    r.components=[t("engine.component.hit",{p1:r.hit?C.hit_damage:0}),t("engine.component.extra",{p1:r.extra})];
+    let boost=0;
+    if(r.hit){
+      if(this.hasToken(r.winner,"charge"))boost+=p.tokens.charge.amount;
+      if(p.tokens.attack){boost+=p.tokens.attack.amount;delete p.tokens.attack;}
+      if(this.ability(r.winner,r.card)==="hit_bonus")boost++;
+      if(has(p,"GEAR_MIGHT")&&large(r.card.rank))boost+=r.card.rank===C.large_max?3:1;
+      if(has(p,"GEAR_SPARK")&&small(r.card.rank))boost+=r.card.rank===C.small_min?3:1;
+      if(has(p,"GEAR_CUP"))boost++;
+      if(has(p,"GEAR_PLATE"))boost+=2;
+      if(s.dice.includes(r.winner))boost+=2;
+      if(r.card.hidden)boost+=2;
+      if(s.cloakPair&&s.cloakPair.includes(r.winner))boost+=2;
+      // 同调环：本回合有别人的牌与获胜牌同色且差正好1。
+      const tuned=s.played.some(c=>c.player!==r.winner&&c.suit===r.card.suit&&Math.abs(c.rank-r.card.rank)===1);
+      // 共鸣鼓：非赢家且与获胜牌同色。接力棒：赢家上一个回合收过你传的牌。
+      for(let i=0;i<4;i++){const q=s.players[i];
+        if(has(q,"GEAR_TUNEFORK")&&tuned)boost+=2;
+        if(has(q,"GEAR_DRUM")&&i!==r.winner&&s.played.some(c=>c.player===i&&c.suit===r.card.suit))boost++;
+        if(has(q,"GEAR_BATON")&&(s.lastTransfers[i]||[]).includes(r.winner))boost+=2;
+        if(i!==r.winner&&has(q,"GEAR_BANNER")&&s.memory.last!==null&&s.memory.last!==r.winner)boost++;
+      }
+      // 猎人笔记：先按已翻面状态加伤，再记录本次花色。
+      if(has(p,"GEAR_NOTES")){
+        if(p.notes.length>=3)boost++;
+        if(r.card.suit!=="black"&&!p.notes.includes(r.card.suit))p.notes.push(r.card.suit);
+      }
+      if(s.sign===r.winner&&!s.signUsed){boost+=2;s.signUsed=true;}
+      if(s.pledge&&s.pledge.player===r.winner&&s.pledge.turn===s.turn){boost+=2;s.gold+=2;this.log(t("engine.finishTrick.log1",{p1:r.winner+1,p2:s.turn}));s.pledge=null;}
+      if(has(p,"GEAR_WATCH")&&!p.watch){p.watch=true;this.log(t("engine.finishTrick.log2",{p1:r.winner+1}));}
+
+    }
+    s.memory=advanceMonster(s.monster,s.memory,r);
+    r.damage+=boost;r.components.push(t("engine.component.boost",{p1:boost}));
+    if(s.wardrum){r.damage*=2;s.wardrum=false;r.components.push(t("engine.component.wardrum"));this.log(t("engine.finishTrick.log_wardrum"));}
+    s.hp=Math.max(0,s.hp-r.damage);s.lastResult=r;s.lastPlayed=s.played.map(x=>({...x,hidden:false}));
+    // 保存结算时的公开牌面；接力回收、下一回合清桌都不应抹掉出牌记录。
+    s.trickHistory.push({level:s.level,turn:s.turn,monster:s.monster.name,cards:s.lastPlayed.map(c=>({...c})),winner:r.winner,hit:r.hit,damage:r.damage,components:[...r.components]});
+    this.log(r.hit?t("engine.finishTrick.log_hit",{p1:s.turn,p2:r.winner+1,p3:r.damage}):t("engine.finishTrick.log_miss",{p1:s.turn,p2:r.winner+1}));
+    for(const p of s.players){for(const [k,v] of Object.entries(p.tokens))if(v.expires!=null&&v.expires<=s.turn)delete p.tokens[k];}
+    // 刻痕斧与重锤在回合结束立即兑现，等价于同一个回合的追加伤害。
+    if(r.hit){
+      if(has(p,"GEAR_AXE")&&!p.uses.axe)s.jobs.push({player:r.winner,id:"axe_offer"});
+      if(has(p,"GEAR_HAMMER")&&(p.uses.hammer||0)<2)s.jobs.push({player:r.winner,id:"hammer_offer"});
+    }
+    for(const card of s.played){
+      const ab=this.ability(card.player,card);
+      if(abilityById[ab]?.timing==="回合结束时")s.jobs.push({player:card.player,id:ab,cardId:card.uid});
+      if(has(s.players[card.player],"GEAR_POUCH")&&!s.players[card.player].uses.pouch)s.jobs.push({player:card.player,id:"pouch"});
+    }
+    for(let i=0;i<4;i++){const q=s.players[i];
+      if(has(q,"GEAR_TUBE")&&(q.uses.tube||0)<2&&q.hand.length)s.jobs.push({player:i,id:"tube_offer"});
+      if(has(q,"GEAR_FLASK")&&!q.uses.flask)s.jobs.push({player:i,id:"flask_offer"});
+      if(has(q,"GEAR_SHELL")&&!q.uses.shell)s.jobs.push({player:i,id:"shell_offer"});
+      if(has(q,"GEAR_WHISTLE")&&(q.uses.whistle||0)<2&&i===r.winner)s.jobs.push({player:i,id:"whistle_offer"});
+      if(q.items.some(x=>x.id==="ITEM_KNOT"))s.jobs.push({player:i,id:"knot_offer"});
+      // 赌徒骰：宣告后没获胜要弃1张。
+      if(s.dice.includes(i)&&i!==r.winner&&q.hand.length)s.jobs.push({player:i,id:"dice_penalty",mandatory:true});
+      if(has(q,"GEAR_WATCH")&&q.watch){const got=this.takeDraw(1,i);if(got.length){q.hand.push(...got);this.log(t("engine.finishTrick.log3",{p1:i+1}));}}
+    }
+    s.lastTransfers=s.transfers;s.transfers={};
+    s.afterJobs="end";this.nextJob();
+  }
+  // 询问前先做不改状态的资格检查；不满足的效果不再弹出"发动／放弃"。resolve 内保留同样的检查，直接构造的 pending 仍然安全。
+  offerEligible(q){
+    const s=this.s,p=s.players[q.player],r=s.lastResult,hasItem=id=>p.items.some(x=>x.id===id);
+    switch(q.id){
+      case "hit_draw":return !!(r&&r.winner===q.player&&r.hit);
+      case "yield_draw":return !!(r&&r.winner!==q.player);
+      case "yield_relay":if(r&&r.winner===q.player)return false;
+      case "relay_self":return s.deck.some(c=>c.uid===q.cardId&&!c.exhaust)&&!s.returned.includes(q.cardId);
+      case "recover_spent":case "recover_low":case "pass_high":case "axe_offer":case "flask_offer":return choiceCards(s).length>0;
+      case "shell_offer":return s.played.some(c=>c.player!==q.player&&abilityById[this.ability(c.player,c)]?.timing==="回合结束时");
+      case "recover_one":return s.discard.length>0;
+      case "gift_draw":return s.draw.length>0;
+      case "tube_offer":case "dice_penalty":return p.hand.length>0;
+      case "advance_offer":return hasItem("ITEM_ADVANCE");
+      case "mulligan_offer":return hasItem("ITEM_MULLIGAN")&&p.hand.length>0;
+      case "seat_offer":return hasItem("ITEM_SEAT");
+      case "pledge_offer":return hasItem("ITEM_PLEDGE");
+      case "knot_offer":return hasItem("ITEM_KNOT");
+      case "pass_clockwise":return s.players.some(x=>x.hand.length);
+      default:return true;
+    }
+  }
+  nextJob(){
+    const s=this.s;s.pending=null;
+    while(s.jobs.length){const job=s.jobs.shift();if(job.person!==undefined)job.player=s.seats.indexOf(job.person);s.pending={...job,step:"offer"};
+      if(!this.offerEligible(s.pending)){s.pending=null;continue;}
+      s.phase="choice";return;}
+    if(s.afterJobs==="play"){this.advancePlay();return;}
+    if(s.afterJobs==="reveal"){this.finishTrick();return;}
+    if(s.afterJobs==="pre"||s.afterJobs==="prebattle"){s.phase="combat";s.afterJobs=null;return;}
+    // 力量药有单独的回合结束使用窗口；其余能力已结算完。
+    if(s.afterJobs==="end"){
+      const candidates=s.players.map((p,i)=>p.items.some(x=>x.id==="ITEM_CHARGE")&&p.itemTurn!==s.turn?i:-1).filter(i=>i>=0);
+      if(candidates.length&&s.hp>0){s.jobs=candidates.map(player=>({id:"charge_offer",player}));s.afterJobs="finish";this.nextJob();return;}
+    }
+    this.endTrick();
+  }
+  endTrick(){
+    const s=this.s;
+    // 空白牌本来就不在公共牌库里，回合结束直接消失。
+    const phantom=s.played.filter(c=>c.phantom).map(c=>c.uid);
+    s.phantoms=s.phantoms.filter(id=>!phantom.includes(id));
+    const exhausted=s.played.filter(c=>c.exhaust&&!c.phantom).map(c=>c.uid);
+    s.retired.push(...exhausted);s.deck=s.deck.filter(c=>!exhausted.includes(c.uid));
+    s.spent.push(...s.played.filter(c=>!c.exhaust&&!c.phantom&&!s.returned.includes(c.uid)).map(x=>s.deck.find(c=>c.uid===x.uid)));
+    s.played=[];s.returned=[];s.pending=null;s.jobs=[];
+    s.excluded=[];s.noFollow=[];s.delayed=null;s.declaredLead=null;s.dice=[];s.cloakPair=null;
+    if(s.hp<=0){for(const p of s.players)delete p.tokens.attack;this.log(t("engine.endTrick.log1",{p1:s.monster.name,p2:s.monster.reward}));s.gold+=s.monster.reward;
+      if(s.level===12){s.phase="victory";return;}s.level++;s.phase="shop";s.deleted=false;this.fillMarket();return;}
+    if(s.players.some(p=>p.hand.length===0)){this.fail(t("engine.fail.reason_next"));return;}
+    s.turn++;s.leader=s.whistleTo??s.lastResult.winner;s.whistleTo=null;s.current=s.leader;s.phase="combat";s.prep={};
+  }
+  fail(reason){const s=this.s;for(const p of s.players)delete p.tokens.attack;if(s.deck.length<C.player_count*openingHandForLevel(s.level)){s.phase="defeat";this.log(t("engine.fail.log1",{p1:reason}));return;}if(s.retries>0){s.retries--;s.phase="retry";this.log(t("engine.fail.log2",{p1:reason}));}else{s.phase="defeat";this.log(t("engine.fail.log3",{p1:reason}));}}
+  // 邮包与腰带已从装备表移除，这两个钩子保留为空，方便以后再挂回合结束触发。
+  afterTransfer(){}
+  afterDiscard(){}
+  transfer(player,target,cards,post=true){
+    check(Number.isInteger(target)&&target>=0&&target<4&&target!==player,t("engine.transfer.err1"));const s=this.s;this.forgetHand(player);s.players[target].hand.push(...cards);
+    const publicCards=cards.every(c=>s.played.some(x=>x.uid===c.uid)&&s.trickHistory.at(-1)?.turn===s.turn);
+    this.observe(cards,target,publicCards?[0,1,2,3]:[player,target]);
+    const info=t("engine.transfer.info",{p1:player+1,p2:target+1,p3:cards.map(cardLabel).join("、")});
+    s.players[player].intel.unshift(info);s.players[target].intel.unshift(info);this.log(t("engine.transfer.log1",{p1:player+1,p2:target+1,p3:cards.length}));
+    (s.transfers[player]||=[]).push(target);
+    if(post)this.afterTransfer(player,[target]);
+  }
+  removeHand(player,uid){const hand=this.s.players[player].hand,i=hand.findIndex(c=>c.uid===uid);check(i>=0,t("engine.removeHand.err1"));this.forgetHand(player);return hand.splice(i,1)[0];}
+  discardCard(player,uid,post=true){const c=this.removeHand(player,uid);if(c.exhaust){this.s.deck=this.s.deck.filter(x=>x.uid!==c.uid);this.s.retired.push(c.uid);}else this.s.discard.push(c);this.log(t("engine.discardCard.log1",{p1:player+1,p2:cardLabel(c)}));if(post)this.afterDiscard(player);return c;}
+  useItem(uid){
+    const s=this.s;check(s.phase==="combat",t("engine.useItem.err1"));const player=s.current,p=s.players[player],i=p.items.findIndex(x=>x.uid===uid),item=p.items[i];
+    check(item,t("engine.useItem.err2"));
+    check(!["ITEM_CHARGE","ITEM_KNOT"].includes(item.id),t("engine.useItem.err3"));
+    check(!["ITEM_ADVANCE","ITEM_MULLIGAN","ITEM_SEAT","ITEM_PLEDGE"].includes(item.id),t("engine.useItem.err4"));
+    check(p.itemTurn!==s.turn,t("engine.useItem.err5"));
+    if(item.id==="ITEM_SUPPLY")check(p.hand.length+s.draw.length>0,t("engine.useItem.err6"));
+    if(item.id==="ITEM_YIELD")check(s.players.some((q,j)=>j!==player),t("engine.useItem.err7"));
+    if(item.id==="ITEM_BELL")check(p.hand.length,t("engine.useItem.err8"));
+    p.items.splice(i,1);s.retired.push(item.uid);p.itemTurn=s.turn;s.prep[player]||={};this.log(t("engine.useItem.log1",{p1:player+1,p2:item.name}));
+    if(item.id==="ITEM_DYE"){s.prep[player].dye=true;return;}
+    if(item.id==="ITEM_SMOKE"){s.prep[player].smoke=true;return;}
+    if(item.id==="ITEM_WARDRUM"){s.wardrum=true;return;}
+    if(item.id==="ITEM_RULER"){s.pending={id:"item_rank",player,step:"choose"};s.afterJobs="pre";s.phase="choice";return;}
+    const direct={ITEM_YIELD:"item_yield",ITEM_BELL:"item_bell",ITEM_BLANK:"item_blank"};
+    if(direct[item.id]){s.jobs=[];s.pending={id:direct[item.id],player,step:"choose",mandatory:true};s.afterJobs="pre";s.phase="choice";return;}
+    s.jobs=[];s.pending={id:"item_supply",player,step:"offer",mandatory:true};s.afterJobs="pre";s.phase="choice";this.resolve({activate:true});
+  }
+  // 空白牌：不消耗手牌，宣告花色与点数后作为本回合出牌，回合结束移出本局。
+  playBlank(player,suit,rank){
+    const s=this.s;check(s.current===player,t("engine.playBlank.err1"));
+    check(suit!=="black"&&Object.hasOwn(suits,suit),t("common.bad_suit"));
+    check(Number.isInteger(rank)&&rank>=C.small_min&&rank<=C.large_max,t("engine.playBlank.err3"));
+    const card={uid:`blank-${s.turn}-${player}`,name:t("engine.blank.name"),suit,rank,ability:"none",player,phantom:true,hidden:false};
+    s.phantoms.push(card.uid);
+    if(!s.played.length)s.leadSuit=s.declaredLead??suit;
+    s.played.push(card);s.prep[player]={};
+    this.log(t("engine.playBlank.log1",{p1:player+1,p2:suits[suit],p3:rank}));
+    this.advancePlay();
+  }
+  resolve(choice={}){
+    const s=this.s,q=s.pending;check(s.phase==="choice"&&q,t("engine.resolve.err1"));const p=s.players[q.player],post=s.afterJobs==="end"||s.afterJobs==="finish";
+    if(q.step==="offer"){
+      if(choice.skip){check(!q.mandatory,t("engine.resolve.err2"));this.nextJob();return;}
+      check(choice.activate,t("engine.resolve.err3"));
+      if(q.id==="pass_clockwise"){
+        q.choosers=Array.from({length:4},(_,i)=>(q.player+i)%4).filter(i=>s.players[i].hand.length);
+        if(!q.choosers.length){this.nextJob();return;}
+        q.locked=[];q.player=q.choosers[0];q.step="choose";return;
+      }
+      if(q.id==="charge_self"){this.addAttack(q.player);this.nextJob();return;}
+      if(["hit_draw","yield_draw"].includes(q.id)){
+        const r=s.lastResult,eligible=r&&(q.id==="hit_draw"?r.winner===q.player&&r.hit:r.winner!==q.player);
+        if(eligible)p.hand.push(...this.takeDraw(2,q.player));this.nextJob();return;
+      }
+      if(["recover_spent","recover_low","pass_high"].includes(q.id)&&!choiceCards(s).length){this.nextJob();return;}
+      if(q.id==="draw_one"){p.hand.push(...this.takeDraw(1,q.player));this.log(t("engine.resolve.log1",{p1:q.player+1}));this.nextJob();return;}
+      if(q.id==="gift_draw"&&!s.draw.length){this.nextJob();return;}
+      if(q.id==="advance_offer"){const i=p.items.findIndex(x=>x.id==="ITEM_ADVANCE");if(i<0){this.nextJob();return;}
+        s.retired.push(p.items.splice(i,1)[0].uid);p.hand.push(...this.takeDraw(2,q.player));p.noDraw=true;
+        this.log(t("engine.resolve.log2",{p1:q.player+1}));this.nextJob();return;}
+      if(q.id==="mulligan_offer"){const i=p.items.findIndex(x=>x.id==="ITEM_MULLIGAN");if(i<0||!p.hand.length){this.nextJob();return;}
+        s.retired.push(p.items.splice(i,1)[0].uid);const n=p.hand.length;this.forgetHand(q.player);for(const observer of s.players)observer.botTop=[];s.draw=this.shuffle([...s.draw,...p.hand]);p.hand=s.draw.splice(0,n);
+        this.log(t("engine.resolve.log3",{p1:q.player+1,p2:n}));this.nextJob();return;}
+      if(q.id==="scope_offer"){p.uses.scope=1;const top=s.draw.slice(0,3);
+        if(top.length)p.intel.unshift(t("engine.scope.info",{p1:top.map(cardLabel).join("、")}));
+        this.log(t("engine.resolve.log4",{p1:q.player+1}));q.top=top.map(c=>c.uid);q.step="choose";return;}
+      if(q.id==="seat_offer"||q.id==="pledge_offer"){if(!p.items.some(x=>x.id===(q.id==="seat_offer"?"ITEM_SEAT":"ITEM_PLEDGE"))){this.nextJob();return;}q.step="choose";return;}
+      if(q.id==="knot_offer"){if(!p.items.some(x=>x.id==="ITEM_KNOT")){this.nextJob();return;}q.step="targets";return;}
+      if(q.id==="sign_offer"){p.uses.sign=1;q.step="choose";return;}
+      if(q.id==="axe_offer"){if(!choiceCards(s).length){this.nextJob();return;}q.step="choose";return;}
+      if(q.id==="hammer_offer"){p.uses.hammer=(p.uses.hammer||0)+1;s.hp=Math.max(0,s.hp-3);
+        if(s.lastResult){s.lastResult.damage+=3;s.lastResult.components.push(t("engine.component.hammer"));}
+        this.log(t("engine.resolve.log5",{p1:q.player+1}));
+        if(!p.hand.length){this.nextJob();return;}q.step="choose";q.owed=Math.min(2,p.hand.length);return;}
+      if(q.id==="whistle_offer"){q.step="choose";return;}
+      if(q.id==="tube_offer"){if(!p.hand.length){this.nextJob();return;}q.step="choose";return;}
+      if(q.id==="flask_offer"){if(!choiceCards(s).length){this.nextJob();return;}q.step="choose";return;}
+      if(q.id==="shell_offer"){
+        q.options=s.played.filter(c=>c.player!==q.player&&abilityById[this.ability(c.player,c)]?.timing==="回合结束时");
+        if(!q.options.length){this.nextJob();return;}q.step="choose";return;}
+      if(q.id==="dice_penalty"&&!p.hand.length){this.nextJob();return;}
+      if(["yield_relay","relay_self"].includes(q.id)&&(!s.deck.some(c=>c.uid===q.cardId&&!c.exhaust)||s.returned.includes(q.cardId))){this.nextJob();return;}
+      if(q.id==="yield_relay"){if(s.lastResult?.winner===q.player){this.nextJob();return;}q.step="choose";return;}
+      if(["cycle","draw_pass","draft_two","item_supply"].includes(q.id)){p.hand.push(...this.takeDraw(["draft_two","item_supply"].includes(q.id)?2:1,q.player));if(!p.hand.length){this.nextJob();return;}q.step="choose";return;}
+      if(["pouch","distribute_three"].includes(q.id)){if(q.id==="pouch")p.uses.pouch=true;q.drawn=this.takeDraw(q.id==="distribute_three"?3:2,q.player);if(!q.drawn.length){this.nextJob();return;}q.step="choose";return;}
+      if(q.id==="relay_self"){q.step="choose";return;}
+      if(q.id==="recover_one"&&!s.discard.length){this.nextJob();return;}
+      if(q.id==="exchange"){
+        if(s.players.filter(x=>x.hand.length).length<2){this.nextJob();return;}q.step="targets";return;
+      }
+      if(["discard_charge","pass_charge","prune_draw"].includes(q.id)&&!p.hand.length){this.nextJob();return;}
+      q.step="choose";return;
+    }
+    const target=Number(choice.target),uid=choice.card;
+    const validTarget=(other=false)=>check(Number.isInteger(target)&&target>=0&&target<4&&(!other||target!==q.player),t("engine.resolve.err4"));
+    switch(q.id){
+      case "pass_clockwise":{
+        check(p.hand.some(c=>c.uid===uid),t("common.pick_own_card"));
+        q.locked.push({player:q.player,uid});
+        if(q.locked.length<q.choosers.length){q.player=q.choosers[q.locked.length];return;}
+        // Remove every outgoing card before anyone receives a card.
+        const packets=q.locked.map(x=>({...x,card:this.removeHand(x.player,x.uid)}));
+        for(const x of packets)this.transfer(x.player,(x.player+1)%4,[x.card],post);
+        // Later transfers invalidate old hand knowledge; restore these simultaneous observations.
+        for(const x of packets)this.observe([x.card],(x.player+1)%4,[x.player,(x.player+1)%4]);
+        break;
+      }
+      case "item_yield":{validTarget(true);s.noFollow.push(target);this.log(t("engine.resolve.log6",{p1:target+1}));break;}
+      case "item_bell":{validTarget(true);const info=t("engine.bell.info",{p1:q.player+1,p2:p.hand.map(cardLabel).join("、")||t("engine.common.empty")});
+        p.intel.unshift(info);s.players[target].intel.unshift(info);this.observe(p.hand,q.player,[target]);this.log(t("engine.resolve.log7",{p1:q.player+1,p2:target+1}));break;}
+      case "item_blank":{const suit=choice.suit,rank=Number(choice.rank);
+        s.pending=null;s.phase="combat";s.afterJobs=null;this.playBlank(q.player,suit,rank);return;}
+      case "scope_offer":{
+        if(Array.isArray(choice.order)&&choice.order.length===q.top.length){
+          const picked=choice.order.map(id=>s.draw.find(c=>c.uid===id));
+          check(picked.every(Boolean)&&new Set(choice.order).size===q.top.length&&choice.order.every(id=>q.top.includes(id)),t("engine.resolve.err6"));
+          s.draw.splice(0,q.top.length,...picked);this.log(t("engine.resolve.log8",{p1:q.player+1,p2:q.top.length}));
+        }
+        for(const observer of s.players)observer.botTop=[];p.botTop=Array.isArray(choice.order)?[...choice.order]:[...q.top];
+        break;}
+      case "sign_offer":{validTarget();s.sign=target;this.log(t("engine.resolve.log9",{p1:q.player+1,p2:target+1}));break;}
+      case "seat_offer":{validTarget(true);const i=p.items.findIndex(x=>x.id==="ITEM_SEAT");check(i>=0,t("engine.resolve.err7"));
+        s.retired.push(p.items.splice(i,1)[0].uid);
+        const a=q.player,b=target;for(const observer of s.players)observer.botKnown={};[s.players[a],s.players[b]]=[s.players[b],s.players[a]];[s.seats[a],s.seats[b]]=[s.seats[b],s.seats[a]];
+        this.log(t("engine.resolve.log10",{p1:a+1,p2:b+1}));break;}
+      case "pledge_offer":{validTarget();const turn=Number(choice.turn);check(Number.isInteger(turn)&&turn>=s.turn,t("engine.resolve.err8"));
+        const i=p.items.findIndex(x=>x.id==="ITEM_PLEDGE");check(i>=0,t("engine.resolve.err9"));s.retired.push(p.items.splice(i,1)[0].uid);
+        s.pledge={player:target,turn};this.log(t("engine.resolve.log11",{p1:target+1,p2:turn}));break;}
+      case "knot_offer":{
+        if(q.step==="targets"){const other=choice.target2;validTarget();
+          check(Number.isInteger(other)&&other>=0&&other<4&&other!==target,t("common.pick_two_players"));
+          check(s.players[target].hand.length&&s.players[other].hand.length,t("common.both_need_cards"));
+          const i=p.items.findIndex(x=>x.id==="ITEM_KNOT");check(i>=0,t("engine.resolve.err12"));s.retired.push(p.items.splice(i,1)[0].uid);
+          q.from=target;q.target=other;q.owner=q.player;q.player=target;q.step="choose";return;}
+        if(q.step==="choose"){check(p.hand.some(c=>c.uid===uid),t("common.pick_card"));q.offered=uid;q.player=q.target;q.step="receive";return;}
+        check(p.hand.some(c=>c.uid===uid),t("common.pick_own_card"));
+        const a=this.removeHand(q.from,q.offered),b=this.removeHand(q.target,uid);
+        this.transfer(q.from,q.target,[a],false);this.transfer(q.target,q.from,[b],false);break;}
+      case "axe_offer":{const i=s.played.findIndex(c=>c.uid===uid&&!s.returned.includes(c.uid));check(i>=0,t("engine.resolve.err15"));
+        p.uses.axe=1;const gone=s.played[i];
+        if(!gone.phantom){s.deck=s.deck.filter(c=>c.uid!==gone.uid);s.retired.push(gone.uid);}
+        s.returned.push(gone.uid);s.hp=Math.max(0,s.hp-1);
+        if(s.lastResult){s.lastResult.damage+=1;s.lastResult.components.push(t("engine.component.axe"));}
+        this.log(t("engine.resolve.log12",{p1:cardLabel(gone)}));break;}
+      case "hammer_offer":{this.discardCard(q.player,uid,false);q.owed--;if(q.owed>0&&p.hand.length)return;break;}
+      case "dice_penalty":{this.discardCard(q.player,uid,false);this.log(t("engine.resolve.log13",{p1:q.player+1}));break;}
+      case "whistle_offer":{validTarget(true);p.uses.whistle=(p.uses.whistle||0)+1;s.whistleTo=target;
+        this.log(t("engine.resolve.log14",{p1:target+1}));break;}
+      case "tube_offer":{validTarget(true);const c=p.hand.find(x=>x.uid===uid);check(c,t("common.pick_own_card"));
+        p.uses.tube=(p.uses.tube||0)+1;const info=t("engine.tube.info",{p1:q.player+1,p2:cardLabel(c)});
+        p.intel.unshift(info);s.players[target].intel.unshift(info);this.observe([c],q.player,[target]);this.log(t("engine.resolve.log15",{p1:q.player+1,p2:target+1}));break;}
+      case "flask_offer":{p.uses.flask=1;
+        if(s.flask){const c=s.flask;s.flask=null;p.hand.push(c);this.log(t("engine.resolve.log16",{p1:q.player+1,p2:cardLabel(c)}));break;}
+        const i=s.played.findIndex(c=>c.uid===uid&&c.player===q.player&&!c.phantom&&!c.exhaust&&!s.returned.includes(c.uid));check(i>=0,t("engine.resolve.err17"));
+        const real=s.deck.find(c=>c.uid===uid);check(real,t("engine.resolve.err18"));
+        s.returned.push(uid);s.flask=real;p.uses.flask=0;this.log(t("engine.resolve.log17",{p1:cardLabel(real)}));break;}
+      case "shell_offer":{const pick=q.options.find(c=>c.uid===uid);check(pick,t("engine.resolve.err19"));
+        p.uses.shell=1;const ab=this.ability(pick.player,pick);
+        const own=s.played.find(c=>c.player===q.player&&!c.phantom);
+        if(["relay_self","yield_relay"].includes(ab)){
+          if(!own){this.log(t("engine.shell.log_void"));break;}
+          s.jobs.unshift({player:q.player,id:ab,cardId:own.uid});
+        } else s.jobs.unshift({player:q.player,id:ab,cardId:pick.uid});
+        this.log(t("engine.resolve.log18",{p1:q.player+1,p2:abilityById[ab]?.name||ab}));break;}
+      case "gift_draw":{validTarget(true);const got=this.takeDraw(1,target);s.players[target].hand.push(...got);this.log(t("engine.resolve.log19",{p1:q.player+1,p2:target+1,p3:got.length}));break;}
+      case "yield_relay":{validTarget(true);const c=s.deck.find(c=>c.uid===q.cardId);check(c,t("engine.resolve.err20"));s.returned.push(c.uid);this.transfer(q.player,target,[c]);break;}
+      case "cycle":case "item_supply":this.discardCard(q.player,uid,post);break;
+      case "draw_pass":case "draft_two":case "pass_charge":validTarget(true);this.transfer(q.player,target,[this.removeHand(q.player,uid)],post);if(q.id==="pass_charge")this.addAttack(target);break;
+      case "pass_high":validTarget(true);check(p.hand.some(c=>c.uid===uid&&c.rank>=7),t("engine.resolve.err21"));this.transfer(q.player,target,[this.removeHand(q.player,uid)],post);p.hand.push(...this.takeDraw(1,q.player));break;
+      case "discard_charge":this.discardCard(q.player,uid,post);this.addAttack(q.player);break;
+      case "prune_draw":this.discardCard(q.player,uid);p.hand.push(...this.takeDraw(2,q.player));break;
+      case "pouch":case "distribute_three":{
+        const i=q.drawn.findIndex(c=>c.uid===uid);check(i>=0,t("engine.resolve.err22"));const other=q.drawn.filter((_,j)=>j!==i);
+        if(other.length){validTarget(true);if(other.length===2)check(Number.isInteger(choice.target2)&&choice.target2>=0&&choice.target2<4&&choice.target2!==target&&choice.target2!==q.player,t("engine.resolve.err23"));}
+        if(q.drawn.length===1&&choice.give){validTarget(true);this.transfer(q.player,target,[q.drawn[0]],post);}
+        else{p.hand.push(q.drawn[i]);other.forEach((c,j)=>this.transfer(q.player,j===0?target:choice.target2,[c],false));if(other.length&&post)this.afterTransfer(q.player,other.length===2?[target,choice.target2]:[target]);}
+        break;
+      }
+      case "exchange":{
+        if(q.step==="targets"){
+          const other=choice.target2;validTarget();check(Number.isInteger(other)&&other>=0&&other<4&&other!==target,t("common.pick_two_players"));
+          check(s.players[target].hand.length&&s.players[other].hand.length,t("common.both_need_cards"));
+          q.from=target;q.target=other;q.player=target;q.step="choose";return;
+        }
+        if(q.step==="choose"){
+          const receiver=q.target;
+          check(s.players[receiver].hand.length,t("engine.resolve.err26"));check(p.hand.some(c=>c.uid===uid),t("common.pick_card"));
+          q.offered=uid;q.from=q.player;q.target=receiver;q.player=receiver;q.step="receive";return;
+        }
+        check(p.hand.some(c=>c.uid===uid),t("common.pick_own_card"));const a=this.removeHand(q.from,q.offered),b=this.removeHand(q.target,uid);this.transfer(q.from,q.target,[a],post);this.transfer(q.target,q.from,[b],post);break;
+      }
+      case "relay_self":{validTarget(true);const c=s.deck.find(c=>c.uid===q.cardId);check(c,t("engine.resolve.err29"));s.returned.push(c.uid);this.transfer(q.player,target,[c]);break;}
+      case "recover_low":case "recover_spent":case "recover_one":{validTarget();const source=q.id==="recover_one"?s.discard:s.spent;const i=source.findIndex(c=>c.uid===uid);check(i>=0&&(q.id!=="recover_low"||source[i].rank<=6),t("engine.resolve.err30"));const c=source.splice(i,1)[0];s.players[target].hand.push(c);this.observe([c],target);this.log(t("engine.resolve.log20",{p1:target+1,p2:cardLabel(c)}));if(target!==q.player)this.afterTransfer(q.player,[target]);break;}
+      case "prepare_rank":case "prepare_suit":
+        validTarget();this.token(target,q.id==="prepare_rank"?"rank":"suit");break;
+      case "item_rank":check(Number.isInteger(choice.rank)&&choice.rank>=C.small_min&&choice.rank<=C.large_max,t("engine.resolve.err31"));s.prep[q.player].rank=choice.rank;break;
+      case "charge_offer":{validTarget();const i=p.items.findIndex(x=>x.id==="ITEM_CHARGE");check(i>=0&&p.itemTurn!==s.turn,t("engine.resolve.err32"));const item=p.items.splice(i,1)[0];p.itemTurn=s.turn;s.retired.push(item.uid);this.token(target,"charge",2);this.log(t("engine.resolve.log21",{p1:q.player+1,p2:target+1}));break;}
+      default:throw new Error(t("engine.err.unknown_ability",{p1:q.id}));
+    }
+    this.nextJob();
+  }
+  botPlay(){playBot(this);}
+  botResolve(){resolveBot(this);}
+  assertZones(){
+    const s=this.s;if(!s.draw)return true;
+    const staged=s.pending?.drawn||[];
+    const played=s.played.filter(c=>!s.returned.includes(c.uid)&&!c.phantom);
+    const stored=s.flask?[s.flask]:[];
+    const ids=[...s.players.flatMap(p=>p.hand),...s.draw,...s.discard,...s.spent,...played,...staged,...stored].map(c=>c.uid);
+    check(new Set(ids).size===ids.length,t("engine.assertZones.err1"));check(ids.length===s.deck.length,t("engine.assertZones.err2"));return true;
+  }
+}
+
+return {abilityById:abilityById,gearById:gearById,itemById:itemById,cardLabel:cardLabel,small:small,large:large,monsterGate:monsterGate,advanceMonster:advanceMonster,trickWinner:trickWinner,evaluateTrick:evaluateTrick,choiceCards:choiceCards,Game:Game};
+})();
+modules.m5=(()=>{
+const {Game,abilityById,gearById,itemById,choiceCards}=modules.m4;
+const {suits}=modules.m0;
+const {t}=modules.m1;
+const {config:C}=modules.m2;
+const app=document.querySelector("#app"),error=document.querySelector("#error");
+let game=new Game(),selected=null,revealed=null,autoTimer=null;
+// review：刚打完的一个回合停在桌面上等玩家点"下一回合"；pendingReview：回合已结算但还在走回合结束效果。
+let review=null,pendingReview=false;
+window.game=game;
+const suitOrder={red:0,yellow:1,blue:2,green:3,black:4};
+const sortHand=hand=>[...hand].sort((a,b)=>(suitOrder[a.suit]??9)-(suitOrder[b.suit]??9)||a.rank-b.rank);
+const resultText=r=>r.hit?t("ui.resultText.hit",{p1:r.damage,p2:r.components.filter(c=>!/(^|\D)0$/.test(c)).map(esc).join(" + ")||t("ui.resultText.base")}):t("ui.resultText.miss");
+const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const btn=(text,action,extra="",primary=false)=>`<button data-action="${action}" ${extra} class="${primary?"primary":""}">${text}</button>`;
+const opts=(values,current)=>values.map(([v,label])=>`<option value="${esc(v)}" ${String(v)===String(current)?"selected":""}>${esc(label)}</option>`).join("");
+const targetOptions=(owner,allowSelf=false,only=null)=>opts(game.s.players.map((p,i)=>[i,p.name]).filter(([i])=>(allowSelf||i!==owner)&&(!only||only.includes(i))));
+const playerSelect=(owner,allowSelf=false,id="target",only=null)=>`<label>${id==="target2"?t("ui.playerSelect.target2"):t("ui.playerSelect.target")}<select id="${id}">${targetOptions(owner,allowSelf,only)}</select></label>`;
+const effectText=c=>{if(c.ability==="forced_hit")return t("ui.effectText.forced_hit");const body=c.text||abilityById[c.ability]?.text||t("ui.effectText.none"),timing=abilityById[c.ability]?.timing;return timing?t("common.labeled",{p1:timing,p2:body}):body;};
+const glyphs={red:"◆",yellow:"☀",blue:"◈",green:"♣",black:"✦"};
+const face=c=>`${suits[c.suit]} ${c.rank}${c.ability==="mirror_self"?` / ${C.mirror_total-c.rank}`:""}`;
+const cardLabel=c=>`${face(c)}${c.ability!=="none"?` · ${effectText(c)}`:""}`;
+const tokenText=(k,v)=>k==="attack"?t("ui.tokenText.attack",{p1:v.amount,p2:v.amount}):t("ui.tokenText.expires",{p1:{rank:t("ui.tokenText.rank"),suit:t("ui.tokenText.suit"),charge:t("ui.tokenText.charge",{p1:v.amount})}[k],p2:v.expires});
+const actor=()=>game.s.pending?.player??game.s.current;
+const isBot=()=>game.s.mode==="solo"&&(game.s.seats?.[actor()]??actor())!==0;
+function nodeView(){return `<div class="nodes">${game.s.nodes.map(n=>`<div class="node ${game.s.level===n.stage?"current":""}"><small>${t("ui.nodeView.stage",{p1:n.stage,p2:n.type})}</small><h3>${n.name}</h3><small>${t("ui.nodeView.hit",{p1:n.hit})}</small><small>${t("ui.nodeView.extra",{p1:n.extra,p2:n.bonus})}</small></div>`).join("")}</div>`;}
+function stats(){const s=game.s;return `<div class="stats"><span>${t("ui.stats.level",{p1:`<b>${s.level}</b>`})}</span><span>${t("ui.stats.gold",{p1:`<b>${s.gold}</b>`})}</span><span>${t("ui.stats.retries",{p1:`<b>${s.retries}</b>`})}</span><span>${t("common.deck_count",{p1:`<b>${s.deck.length}</b>`})}</span></div>`;}
+function playerView(){const s=game.s,owners=s.players.filter(p=>p.gear.length||p.items.length||Object.keys(p.tokens).length);if(!owners.length)return "";return `<div class="players">${owners.map(p=>`<div class="player"><h3>${p.name}</h3>${[...p.gear.map(id=>gearById[id]),...p.items].map(x=>`<details><summary>${esc(x.name)}</summary><p>${esc(x.text)}</p></details>`).join("")}<div class="token">${Object.entries(p.tokens).map(([k,v])=>`${tokenText(k,v)}`).join(" · ")}</div></div>`).join("")}</div>`;}
+function setup(){return `<section class="panel setup"><div class="opening-emblem" aria-hidden="true"><span class="green">♣</span><span class="red">◆</span><span class="blue">◈</span></div><p class="eyebrow">${t("ui.setup.eyebrow")}</p><h2>${t("ui.setup.title")}</h2><p class="muted">${t("ui.setup.intro")}</p><label>${t("ui.setup.mode_label")}<select id="mode"><option value="solo">${t("ui.setup.mode_solo")}</option><option value="hotseat">${t("ui.setup.mode_hotseat")}</option></select></label>${btn(t("ui.setup.start"),"start","",true)}<details class="how-to"><summary>${t("ui.setup.howto")}</summary><p>${t("ui.setup.howto1")}</p><p>${t("ui.setup.howto2")}</p><p>${t("ui.setup.howto3")}</p></details></section>`;}
+function deckSummary(){const s=game.s;return `<div class="deck-summary"><span class="pick-label">${t("common.deck_count",{p1:s.deck.length})}</span>${Object.keys(suitOrder).map(suit=>{const cs=s.deck.filter(c=>c.suit===suit).sort((a,b)=>a.rank-b.rank);return cs.length?`<span class="${suit} deck-suit">${t("ui.deckSummary.suit_line",{p1:suits[suit],p2:cs.length,p3:cs.map(c=>c.ability!=="none"?`<u>${c.rank}</u>`:c.rank).join(" ")})}</span>`:"";}).join("")}<small class="muted">${t("ui.deckSummary.note")}</small></div>`;}
+function shop(){const s=game.s;return `<section class="panel"><div class="row spread"><h2>${s.level===1?t("ui.shop.header_first"):t("ui.shop.header_later")}</h2><span>${t("ui.shop.carry_cap",{p1:C.carry_gold_cap})}</span></div>${deckSummary()}<div class="market">${s.market.map((c,i)=>c?`<article class="product ${c.type==="牌库牌"?`card ${c.suit}`:""}">${c.type==="牌库牌"?`${cardFace(c)}`:`<span class="badge">${c.type}</span><h3>${c.name}</h3>`}${c.type!=="牌库牌"?`<p class="desc">${effectText(c)}</p>`:""}${c.type!=="牌库牌"?`<label>${t("ui.shop.owner")}<select id="owner-${i}">${targetOptions(0,true)}</select></label>`:""}${c.type==="装备"?`<label>${t("ui.shop.replace")}<select id="replace-${i}"><option value="">${t("ui.shop.replace_none")}</option>${s.players.flatMap((p,j)=>p.gear.map(id=>[id,t("ui.shop.replace_option",{p1:j+1,p2:gearById[id].name})])).map(([id,n])=>`<option value="${id}">${n}</option>`).join("")}</select></label>`:""}${btn(t("ui.shop.buy",{p1:c.price}),"buy",`data-index="${i}" ${s.gold<c.price?"disabled":""}`)}</article>`:`<article class="product empty">${t("ui.shop.sold_out")}</article>`).join("")}</div><div class="row controls">${btn(t("ui.shop.refresh",{p1:C.market_refresh_cost}),"refresh",s.gold<C.market_refresh_cost?"disabled":"")}${btn(t("ui.shop.leave"),"leave","",true)}</div><details><summary>${t("ui.shop.delete_summary")}</summary><label>${t("ui.shop.delete_label")}<select id="delete-card">${opts(s.deck.map(c=>[c.uid,cardLabel(c)]))}</select></label>${btn(t("ui.shop.delete",{p1:C.deck_delete_cost}),"delete",s.deleted||!s.deck.length||s.gold<C.deck_delete_cost?"disabled":"")}</details></section>${historyView()}${playerView()}`;}
+function cardFace(c){return `<span class="number">${face(c)}</span><span class="suit-emblem" aria-hidden="true">${glyphs[c.suit]}</span><span class="desc">${c.ability==="none"?"":esc(effectText(c))}</span><span class="card-corner" aria-hidden="true">${glyphs[c.suit]} ${c.rank}</span>`;}
+function cardView(c,selectable=true){const s=game.s,legal=!selectable||game.canPlay(s.current,c);
+  // 不能直接跟牌的牌压暗并标出原因；带变色手段的牌提示先设置再出。
+  const canRecolor=c.ability==="change_self"||game.hasToken(s.current,"suit")||s.prep[s.current]?.dye;
+  const flag=legal?"":`<span class="card-flag">${canRecolor?t("ui.cardView.recolor"):t("ui.cardView.must_follow",{p1:suits[s.leadSuit]||t("ui.cardView.lead_suit")})}</span>`;
+  return `<button type="button" class="card ${c.suit} ${selected===c.uid?"selected":""} ${!legal?"needs-adjustment":""}" aria-label="${esc(cardLabel(c))}${legal?"":t("ui.cardView.illegal_aria")}" aria-pressed="${selected===c.uid}" ${selectable?`data-action="select" data-card="${c.uid}" data-drag-card="${c.uid}"`:"disabled"}>${cardFace(c)}${flag}</button>`;}
+
+function playedCards(cards,leader,winner=null){
+  return `<div class="trick">${Array.from({length:4},(_,i)=>{
+    const c=cards[i],player=c?.player??(leader+i)%4,hidden=c?.hidden&&cards.length<4;
+    const original=c&&!hidden?game.s.deck.find(x=>x.uid===c.uid):null;
+    const changed=original&&(original.suit!==c.suit||original.rank!==c.rank);
+    return `<article class="played ${c&&!hidden?c.suit:""} ${c&&player===winner?"winner":""}"><small>${i===0?t("ui.playedCards.seat_lead",{p1:i+1,p2:player+1}):t("ui.playedCards.seat",{p1:i+1,p2:player+1})}</small>${!c?`<p class="muted">${t("ui.playedCards.waiting")}</p>`:hidden?`<div class="card-back"><strong>${t("common.hidden")}</strong><small>${t("ui.playedCards.hidden_hint")}</small></div>`:`<strong class="number">${suits[c.suit]} ${c.rank}</strong>${changed?`<small class="original">${t("common.original_card",{p1:suits[original.suit],p2:original.rank})}</small>`:""}<p class="desc">${c.ability==="none"?"":esc(effectText(c))}</p>${player===winner?`<span class="winner-label">${t("common.won_round")}</span>`:""}`}</article>`;
+  }).join("")}</div>`;
+}
+function trickRecord(record){return `<div class="trick-record"><div class="result">${t("ui.trickRecord.summary",{p1:record.level,p2:record.turn,p3:esc(record.monster),p4:record.winner+1,p5:resultText(record)})}</div>${playedCards(record.cards,record.cards[0].player,record.winner)}</div>`;}
+function historyView(){
+  const records=game.s.trickHistory||[],last=records.at(-1);
+  if(!last)return "";
+  return `<section class="panel played-history"><h3>${t("ui.historyView.title")}</h3>${trickRecord(last)}${records.length>1?`<details class="earlier-tricks"><summary>${t("ui.historyView.earlier",{p1:records.length-1})}</summary>${records.slice(0,-1).reverse().map(trickRecord).join("")}</details>`:""}</section>`;
+}
+function playControls(){const s=game.s,p=s.players[s.current],c=p.hand.find(x=>x.uid===selected);if(!c)return `<div class="controls idle-controls"><b>${t("ui.playControls.your_turn")}</b><p class="muted">${t("ui.playControls.hint")}</p></div>`;
+  const delta=(id,n,label)=>`<label>${label}<select id="${id}">${opts(Array.from({length:n*2+1},(_,i)=>[i-n,i-n===0?t("ui.playControls.no_adjust"):`${i-n>0?"+":""}${i-n}`]),0)}</select></label>`;
+  return `<div class="controls"><b>${t("ui.playControls.ready",{p1:face(c)})}</b><div class="row">${c.ability==="low_self"?`<label>${t("ui.playControls.as_label")}<select id="low">${opts([["",t("ui.playControls.keep_rank")],...Array.from({length:6},(_,i)=>[i+1,i+1])])}</select></label>`:""}${c.ability==="adjust_self"?delta("adjust",3,t("ui.playControls.adjust")):""}${c.ability==="mirror_self"?`<label>${t("ui.playControls.as_label")}<select id="mirror">${opts([["0",c.rank],["1",C.mirror_total-c.rank]],"0")}</select></label>`:""}${c.ability==="adjust_two"?delta("adjust2",2,t("ui.playControls.adjust2")):""}${game.hasToken(s.current,"rank")?delta("prepared",3,t("ui.playControls.prepared")):""}${c.ability==="change_self"||game.hasToken(s.current,"suit")||s.prep[s.current]?.dye?`<label>${t("ui.playControls.suit_label")}<select id="suit">${opts([["",t("ui.playControls.keep_suit")],...Object.entries(suits).filter(([s])=>s!=="black")])}</select></label>`:""}${game.veilSource(s.current)&&s.played.length>0?`<label><input id="veil" type="checkbox">${t("ui.playControls.veil",{p1:({veil:gearById.GEAR_VEIL.name,cloak:gearById.GEAR_CLOAK.name,partner:t("ui.playControls.cloak_partner")})[game.veilSource(s.current)]})}</label>`:""}${p.gear.includes("GEAR_ROPE")&&(p.uses.rope||0)<3&&s.played.length>0?`<label><input id="rope" type="checkbox">${t("ui.playControls.rope",{p1:3-(p.uses.rope||0)})}</label>`:""}${p.gear.includes("GEAR_STANDARD")&&!p.uses.standard&&!s.played.length?`<label>${t("ui.playControls.standard_label")}<select id="standard">${opts([["",t("ui.playControls.unused")],...Object.entries(suits).filter(([x])=>x!=="black")])}</select></label>`:""}${p.gear.includes("GEAR_DICE")&&(p.uses.dice||0)<2?`<label>${t("ui.playControls.dice_label")}<select id="dice">${opts([["",t("ui.playControls.unused")],...Array.from({length:12},(_,i)=>[i+1,i+1])])}</select></label>`:""}</div><p id="playHint" class="muted"></p>${btn(t("ui.playControls.play"),"play","",true)}${p.gear.includes("GEAR_MALLET")&&(p.uses.mallet||0)<2&&s.played.length>0&&s.delayed===null?btn(t("ui.playControls.delay",{p1:2-(p.uses.mallet||0)}),"delay"):""}</div>`;
+}
+function choiceView(){const s=game.s,q=s.pending,p=s.players[q.player],def=abilityById[q.id];const names={pouch:t("ui.choice.name_pouch"),item_rank:t("ui.choice.name_item_rank"),item_supply:t("ui.choice.name_item_supply"),charge_offer:t("ui.choice.name_charge_offer"),axe_offer:t("ui.choice.name_axe_offer"),hammer_offer:t("ui.choice.name_hammer_offer"),whistle_offer:t("ui.choice.name_whistle_offer"),tube_offer:t("ui.choice.name_tube_offer"),flask_offer:t("ui.choice.name_flask_offer"),shell_offer:t("ui.choice.name_shell_offer"),scope_offer:t("ui.choice.name_scope_offer"),sign_offer:t("ui.choice.name_sign_offer"),seat_offer:t("ui.choice.name_seat_offer"),pledge_offer:t("ui.choice.name_pledge_offer"),knot_offer:t("ui.choice.name_knot_offer"),advance_offer:t("ui.choice.name_advance_offer"),mulligan_offer:t("ui.choice.name_mulligan_offer"),dice_penalty:t("ui.choice.name_dice_penalty"),item_yield:t("ui.choice.name_item_yield"),item_bell:t("ui.choice.name_item_bell"),item_blank:t("ui.choice.name_item_blank")};
+  const texts={pouch:"GEAR_POUCH",axe_offer:"GEAR_AXE",hammer_offer:"GEAR_HAMMER",whistle_offer:"GEAR_WHISTLE",tube_offer:"GEAR_TUBE",flask_offer:"GEAR_FLASK",shell_offer:"GEAR_SHELL",scope_offer:"GEAR_SCOPE",sign_offer:"GEAR_SIGN",dice_penalty:"GEAR_DICE"};
+  const itemTexts={item_rank:"ITEM_RULER",item_supply:"ITEM_SUPPLY",charge_offer:"ITEM_CHARGE",seat_offer:"ITEM_SEAT",pledge_offer:"ITEM_PLEDGE",knot_offer:"ITEM_KNOT",advance_offer:"ITEM_ADVANCE",mulligan_offer:"ITEM_MULLIGAN",item_yield:"ITEM_YIELD",item_bell:"ITEM_BELL",item_blank:"ITEM_BLANK"};
+  const title=def?(s.afterJobs==="reveal"?t("ui.choice.reveal_title"):def.timing):names[q.id]||t("ui.choice.title_fallback"),description=def?.text||gearById[texts[q.id]]?.text||itemById[itemTexts[q.id]]?.text||t("ui.choice.desc_fallback");
+  let controls="";
+  if(q.step==="offer")controls=`${btn(t("ui.choice.activate"),"activate","",true)} ${btn(t("ui.choice.skip"),"skip")}`;
+  else if(q.step==="targets"){
+    const eligible=s.players.map((p,i)=>p.hand.length?i:-1).filter(i=>i>=0);
+    controls=`<p>${q.id==="knot_offer"?t("ui.choice.knot_targets"):t("ui.choice.swap_targets")}</p>${playerSelect(q.player,true,"target",eligible)}${playerSelect(q.player,true,"target2",eligible)}${btn(t("ui.choice.confirm_targets"),"resolve","",true)}`;
+  }else{
+    const noCard=["relay_self","yield_relay","prepare_rank","prepare_suit","item_rank","charge_offer","gift_draw","whistle_offer","sign_offer","seat_offer","pledge_offer","scope_offer","item_yield","item_bell","item_blank"].includes(q.id);
+    const source=choiceCards(s);
+    if(q.id==="pass_clockwise")controls+=`<p>${t("ui.choice.pass_clockwise",{p1:(q.player+1)%4+1})}</p>`;
+    if(!noCard)controls+=`<label>${q.drawn?t("ui.choice.label_keep"):q.step==="receive"?t("ui.choice.label_receive"):t("ui.choice.label_card")}<select id="choice-card">${opts(source.map(c=>[c.uid,cardLabel(c)]))}</select></label>`;
+    if(q.id==="item_blank")controls+=`<label>${t("ui.choice.blank_suit")}<select id="blank-suit">${opts(Object.entries(suits).filter(([x])=>x!=="black"))}</select></label><label>${t("ui.choice.blank_rank")}<select id="choice-rank">${opts(Array.from({length:12},(_,i)=>[i+1,i+1]),8)}</select></label>`;
+    if(q.id==="pledge_offer")controls+=`<label>${t("ui.choice.pledge_turn")}<select id="pledge-turn">${opts(Array.from({length:8},(_,i)=>[s.turn+i,t("ui.choice.turn_option",{p1:s.turn+i})]),s.turn)}</select></label>`;
+    if(q.id==="item_rank")controls+=`<label>${t("ui.choice.set_rank")}<select id="choice-rank">${opts(Array.from({length:12},(_,i)=>[i+1,i+1]),8)}</select></label>`;
+    const needsTarget=["pass_high","draw_pass","pass_charge","draft_two","pouch","distribute_three","relay_self","yield_relay","gift_draw","recover_one","recover_spent","recover_low","prepare_rank","prepare_suit","charge_offer","whistle_offer","tube_offer","sign_offer","seat_offer","pledge_offer","item_yield","item_bell"].includes(q.id)&&q.step!=="receive";
+    if(needsTarget)controls+=playerSelect(q.player,["recover_one","recover_spent","recover_low","prepare_rank","prepare_suit","charge_offer","sign_offer","pledge_offer"].includes(q.id),"target",q.targets);
+    if(q.drawn?.length===3)controls+=playerSelect(q.player,false,"target2");
+    if(q.drawn?.length===1)controls+=`<label><input id="give" type="checkbox">${t("ui.choice.give")}</label>`;
+    controls+=btn(t("ui.choice.confirm"),"resolve","",true);
+  }
+  return `<div class="controls"><h3>${t("ui.choice.header",{p1:q.player+1,p2:title})}</h3><p>${description}</p>${def?.note?`<p class="choice-note">${def.note}</p>`:""}<div class="choices">${controls}</div></div>`;
+}
+function directPickers(){
+  targetField="target";
+  // Keep one value per control; choices themselves are real keyboard-accessible buttons.
+  app.querySelectorAll('select:not(#mode)').forEach(select=>{
+    const id=select.id,group=document.createElement('div');group.className='pick-group';group.dataset.field=id;
+    const input=document.createElement('input');input.type='hidden';input.id=id;input.value=select.value;group.append(input);
+    const isCard=['choice-card','delete-card'].includes(id);
+    const source=game.s.pending?choiceCards(game.s):game.s.players[actor()]?.hand||[];
+    const pool=id==='delete-card'?game.s.deck:source;
+    for(const option of select.options){
+      const button=document.createElement('button');button.type='button';button.dataset.pick=id;button.dataset.value=option.value;
+      button.setAttribute('aria-pressed',String(option.selected));button.className=option.selected?'picked':'';
+      const card=isCard&&pool.find(c=>c.uid===option.value);
+      if(card){button.classList.add('card',card.suit);button.innerHTML=cardFace(card);if(id==='choice-card')button.dataset.dragChoice=card.uid;}
+      else{button.textContent=option.textContent;if(Object.hasOwn(suits,option.value))button.classList.add(option.value,'suit-pick');}
+      group.append(button);
+    }
+    select.replaceWith(group);group.closest('label')?.classList.add('pick-label');
+  });
+  syncPicks();
+}
+let targetField='target';
+function setPick(field,value){
+  const input=document.getElementById(field);if(!input)return;
+  input.value=value;
+  if(field==='target'||field==='target2')targetField=field;
+  syncPicks();updateHint();
+}
+function syncPicks(){
+  app.querySelectorAll('[data-pick]').forEach(b=>{
+    const picked=document.getElementById(b.dataset.pick)?.value===b.dataset.value;
+    b.classList.toggle('picked',picked);b.setAttribute('aria-pressed',String(picked));
+  });
+  if(!document.getElementById(targetField))targetField='target';
+  const choices=[...app.querySelectorAll(`[data-pick="${targetField}"]`)];
+  app.querySelectorAll('[data-seat]').forEach(b=>{
+    const allowed=choices.some(c=>c.dataset.value===b.dataset.seat);
+    b.disabled=!allowed;b.classList.toggle('targetable',allowed);
+    b.classList.toggle('picked',allowed&&document.getElementById(targetField)?.value===b.dataset.seat);
+    b.setAttribute('aria-pressed',String(allowed&&document.getElementById(targetField)?.value===b.dataset.seat));
+  });
+  const resolve=app.querySelector('[data-action="resolve"]');
+  if(resolve){const val=id=>document.getElementById(id)?.value;
+    resolve.disabled=!!((val('target2')!==undefined&&val('target2')===val('target'))||(val('choice-card2')&&val('choice-card2')===val('choice-card')));
+  }
+}
+// 回合已结算但回合结束效果还没走完时，桌面照样标出赢家和命中结果。
+function settledTrick(){const s=game.s,last=s.trickHistory.at(-1);return s.lastResult&&s.played.length&&last&&last.turn===s.turn&&last.level===s.level?last:null;}
+function tableView(record=null){
+  const s=game.s,done=record||settledTrick(),cards=record?record.cards:s.played,leader=record?record.cards[0].player:s.leader,winner=done?done.winner:null;
+  const center=record?`<b>${t("ui.table.trick_done",{p1:record.turn})}</b><small>${t("ui.table.winner",{p1:record.winner+1})}</small><small class="${record.hit?'hit':'miss'}">${resultText(record)}</small>`
+    :`<b>${t("ui.table.trick_no",{p1:s.turn})}</b><small>${done?t("ui.table.winner_result",{p1:done.winner+1,p2:done.hit?t("ui.table.hit"):t("ui.table.miss")}):s.phase==='choice'?t("ui.table.resolving",{p1:actor()+1}):isBot()?t("ui.table.thinking",{p1:s.current+1}):t("ui.table.turn_of",{p1:s.current+1})}</small><small>${s.leadSuit?t("ui.table.lead_suit",{p1:suits[s.leadSuit]}):t("ui.table.waiting_lead")}</small><span class="drop-caption">${s.phase==='combat'&&!isBot()?t("ui.table.drop_hint"):s.phase==='choice'?t("ui.table.resolving_hint"):t("ui.table.clockwise")}</span>`;
+  return `<div class="current-trick table-wrap"><div class="table-top"><div class="table-center" data-drop-play><span class="table-mark" aria-hidden="true">✦</span>${center}</div>${s.players.map((p,i)=>{
+    const order=(i-leader+4)%4,c=cards.find(c=>c.player===i),hidden=c?.hidden&&cards.length<4;
+    const original=c&&!hidden?s.deck.find(x=>x.uid===c.uid):null,changed=original&&(original.suit!==c.suit||original.rank!==c.rank);
+    return `<div class="table-seat seat-${i} ${!record&&i===actor()?'acting':''} ${i===winner?'winner':''}"><button class="seat-name" data-seat="${i}" disabled><span class="avatar" aria-hidden="true">${i+1}</span><b>${p.name}</b><small>${i===leader?t("ui.table.hand_count_lead",{p1:p.hand.length}):t("ui.table.hand_count",{p1:p.hand.length})}</small></button><article class="played ${c&&!hidden?c.suit:''} ${c&&i===winner?'winner':''}" data-order="${order}"><small>${t("ui.table.seat_order",{p1:order+1})}</small>${!c?`<span class="waiting">${t("ui.table.waiting")}</span>`:hidden?`<div class="card-back"><strong>${t("common.hidden")}</strong></div>`:`<strong class="number">${suits[c.suit]} ${c.rank}</strong>${changed?`<small>${t("common.original_card",{p1:suits[original.suit],p2:original.rank})}</small>`:''}${c.ability==='none'?'':`<p class="desc">${esc(effectText(c))}</p>`}${i===winner?`<span class="winner-label">${t("common.won_round")}</span>`:''}`}</article><div class="seat-gear">${[...p.gear.map(id=>gearById[id]),...p.items].map(x=>`<details><summary>${esc(x.name)}</summary><p>${esc(x.text)}</p></details>`).join('')}${Object.entries(p.tokens).map(([k,v])=>`<small>${tokenText(k,v)}</small>`).join('')}</div></div>`;
+  }).join('')}</div></div>`;
+}
+
+function combat(record=null){const s=game.s,n=s.monster,viewer=actor(),p=s.players[viewer];
+  const phase=n.gate.phases?.[s.memory.step%n.gate.phases.length]||n.gate,wanted=n.gate.cycle?.[s.memory.step%n.gate.cycle.length]||phase?.suit||n.gate.suit;
+  const shared=`<section class="battlefield"><aside class="panel monster-panel"><p class="eyebrow">${t("ui.combat.eyebrow",{p1:n.type||t("ui.combat.monster_fallback"),p2:s.level})}</p><div class="row spread"><h2>${n.name}</h2><span>${t("ui.combat.turn_hp",{p1:s.turn,p2:s.hp,p3:n.hp})}</span></div><div class="health"><i style="width:${s.hp/n.hp*100}%"></i></div><p>${t("ui.combat.hit",{p1:n.breach?phase.hit:n.hit})}</p>${n.breach?"":`<p>${t("ui.combat.extra",{p1:n.extra,p2:n.bonus})}</p>`}${n.breach?`<p>${s.memory.step%2!==0?t("ui.combat.breach_on",{p1:n.extra}):n.gate.phases[1].echo?t("ui.combat.breach_off_echo",{p1:n.extra}):t("ui.combat.breach_off",{p1:n.gate.phases[1].hit.replace(/[。；]+$/,""),p2:n.extra})}</p>`:""}${!n.breach&&(n.gate.cycle||n.gate.phases)?`<p>${phase?.size?(phase.size==="small"?t("ui.combat.req_small",{p1:suits[wanted],p2:C.small_max}):t("ui.combat.req_large",{p1:suits[wanted],p2:C.large_min})):t("ui.combat.req_plain",{p1:suits[wanted]})}</p>`:""}${phase.echo?`<p>${t("ui.combat.echo",{p1:s.memory.echoRank})}</p>`:""}${phase.lowest?`<p>${t("ui.combat.lowest")}</p>`:""}${n.collectColors?`<p>${t("ui.combat.collect",{p1:(s.memory.colors||[]).map(c=>suits[c]).join("、")||t("ui.combat.none"),p2:n.collectColors})}</p>`:""}${phase.rotate||n.gate.rotate||n.extraRule==="new_attacker"||s.players.some(p=>p.gear.includes("GEAR_BANNER"))?`<p>${t("ui.combat.last_hit",{p1:s.memory.last===null?t("ui.combat.none"):t("common.player",{p1:s.memory.last+1})})}</p>`:""}${n.gate.unique?`<p>${t("ui.combat.marks",{p1:s.memory.marks.map(i=>t("common.player",{p1:i+1})).join("、")||t("ui.combat.none")})}</p>`:""}${s.flask?`<p>${t("ui.combat.flask",{p1:cardLabel(s.flask)})}</p>`:""}${s.sign!==null&&s.sign!==undefined?`<p>${t("ui.combat.sign",{p1:s.sign+1,p2:s.signUsed?t("ui.combat.sign_used"):""})}</p>`:""}${s.pledge?`<p>${t("ui.combat.pledge",{p1:s.pledge.player+1,p2:s.pledge.turn})}</p>`:""}${s.delayed!==null&&s.delayed!==undefined?`<p>${t("ui.combat.mallet",{p1:s.delayed+1})}</p>`:""}<p>${t("ui.combat.progress",{p1:s.hp>0?t("ui.combat.progress_remain",{p1:s.hp,p2:Math.min(...s.players.map((q,i)=>q.hand.length+(s.played.some(c=>c.player===i)?1:0)))}):t("ui.combat.progress_done")})}</p><div class="deck-count"><span>${t("ui.combat.draw_count",{p1:`<b>${s.draw.length}</b>`})}</span><span>${t("ui.combat.discard_count",{p1:`<b>${s.discard.length}</b>`})}</span></div></aside>${tableView(record)}</section>`;
+  if(record){
+    const next={shop:[t("ui.combat.next_shop"),t("ui.combat.next_shop_btn")],victory:[t("ui.combat.next_victory"),t("ui.combat.next_result_btn")],retry:[t("ui.combat.next_retry"),t("ui.combat.next_result_btn")],defeat:[t("ui.combat.next_defeat"),t("ui.combat.next_result_btn")]}[s.phase]||[t("ui.combat.next_trick",{p1:s.leader+1}),t("ui.combat.next_trick_btn")];
+    return shared+`<section class="panel review-panel"><div class="row spread"><div><h3>${t("ui.combat.review_title",{p1:record.turn,p2:record.winner+1})}</h3><p>${t("ui.combat.review_line",{p1:resultText(record),p2:next[0]})}</p></div>${btn(next[1],"continue","",true)}</div></section>${historyView()}`;
+  }
+  if(isBot())return shared+`<div class="panel secret">${t("ui.combat.bot_thinking",{p1:viewer+1})}</div>${historyView()}`;
+  if(s.mode==="hotseat"&&revealed!==viewer)return shared+`<div class="panel secret"><h3>${t("ui.combat.pass_screen",{p1:viewer+1})}</h3>${btn(t("ui.combat.reveal"),"reveal","",true)}</div>${historyView()}`;
+  return shared+`<section class="panel hand-panel"><div class="row spread"><h2>${t("ui.hand.title",{p1:viewer+1,p2:p.hand.length})}</h2><div class="row"><button data-hand-scroll="-1" aria-label="${t("ui.hand.scroll_left")}">‹</button><button data-hand-scroll="1" aria-label="${t("ui.hand.scroll_right")}">›</button>${s.mode==="hotseat"?btn(t("ui.hand.hide"),"hide"):""}</div></div>${s.phase==="choice"&&s.pending.step!=="offer"?"":`<div class="hand">${sortHand(p.hand).map(c=>cardView(c,s.phase==="combat")).join("")}</div>`}${s.phase==="choice"?choiceView():playControls()}${s.phase==="combat"?`<div class="item-actions">${p.items.filter(x=>x.id!=="ITEM_CHARGE").map(x=>btn(t("ui.hand.use_item",{p1:x.name}),"item",`data-uid="${x.uid}" ${p.itemTurn===s.turn?"disabled":""}`)).join("")}</div>`:""}${p.intel.length?`<details><summary>${t("ui.hand.intel")}</summary>${p.intel.map(line=>`<p>${esc(line)}</p>`).join("")}</details>`:""}${s.discard.length?`<details><summary>${t("ui.hand.discard")}</summary>${s.discard.map(c=>`<p>${cardLabel(c)}</p>`).join("")}</details>`:""}</section>${historyView()}`;
+}
+function ending(){const s=game.s;return `<div class="panel screen-end"><h2>${{retry:t("ui.ending.retry"),defeat:t("ui.ending.defeat"),victory:t("ui.ending.victory")}[s.phase]}</h2><p>${s.phase==="retry"?t("ui.ending.retry_note"):s.phase==="victory"?"":""}</p>${s.phase==="retry"?btn(t("ui.ending.retry_btn"),"retry","",true):btn(t("ui.ending.reset_btn"),"reset","",true)}</div>${historyView()}`;}
+function render(){
+  cancelDrag();
+  clearTimeout(autoTimer);const s=game.s;
+  if(review&&s.phase==="setup")review=null;
+  app.innerHTML=s.phase==="setup"?setup():`${stats()}${s.phase==="shop"&&!review?nodeView():`<details class="future-nodes"><summary>${t("ui.render.future_nodes")}</summary>${nodeView()}</details>`}${review?combat(review):s.phase==="shop"?shop():["combat","choice"].includes(s.phase)?combat():ending()}`;
+  directPickers();updateHint();updateHandScroll();if(!review&&["combat","choice"].includes(s.phase)&&isBot())autoTimer=setTimeout(()=>run(()=>s.phase==="combat"?game.botPlay():game.botResolve()),550);
+}
+// 手牌放得下就不显示左右箭头。
+function updateHandScroll(){const hand=app.querySelector(".hand"),over=!!hand&&hand.scrollWidth>hand.clientWidth+4;app.querySelectorAll("[data-hand-scroll]").forEach(b=>{b.hidden=!over;});}
+window.addEventListener("resize",updateHandScroll);
+function readOptions(){const val=id=>document.getElementById(id)?.value;return {low:val("low")?Number(val("low")):undefined,adjust:Number(val("adjust")||0),adjust2:Number(val("adjust2")||0),prepared:Number(val("prepared")||0),suit:val("suit")||undefined,mirror:val("mirror")==="1",veil:!!document.getElementById("veil")?.checked,rope:document.getElementById("rope")?.checked?true:undefined,standard:val("standard")||undefined,dice:val("dice")?Number(val("dice")):undefined};}
+function updateHint(){const hint=document.querySelector("#playHint");if(!hint)return;const s=game.s,c=s.players[s.current].hand.find(c=>c.uid===selected);if(!c)return;try{const mod=game.modified(s.current,c,readOptions()),legal=game.canPlay(s.current,c,readOptions());hint.textContent=t("ui.updateHint.text",{p1:suits[mod.suit],p2:mod.rank,p3:legal?t("ui.updateHint.legal"):t("ui.updateHint.illegal")});document.querySelector('[data-action="play"]').disabled=!legal;}catch(e){hint.textContent=e.message;}}
+function run(fn){const before=actor(),tricks=(game.s.trickHistory||[]).length;try{error.hidden=true;fn();const s=game.s;if(actor()!==before||!["combat","choice"].includes(s.phase)){revealed=null;selected=null;}
+    // 一个回合在这次操作里结算完，就停在桌面上；回合结束效果还在走的话等它们结束再停。
+    const count=(s.trickHistory||[]).length;if(count>tricks)pendingReview=true;else if(count<tricks)pendingReview=false;
+    if(pendingReview&&s.phase!=="choice"){review=s.trickHistory.at(-1);pendingReview=false;}
+    if(s.phase!=="shop")game.assertZones();}catch(e){error.textContent=e.message;error.hidden=false;console.error(e);}render();}
+function reset(){clearTimeout(autoTimer);game=new Game();window.game=game;revealed=null;selected=null;review=null;pendingReview=false;render();}
+document.querySelector("#reset").onclick=()=>{if(game.s.phase!=="setup"&&!confirm(t("ui.reset.confirm")))return;reset();};
+app.addEventListener("change",updateHint);
+app.addEventListener("click",e=>{const scroll=e.target.closest('[data-hand-scroll]');if(scroll){app.querySelector('.hand')?.scrollBy({left:Number(scroll.dataset.handScroll)*250,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});return;}const pick=e.target.closest("[data-pick]");if(pick){setPick(pick.dataset.pick,pick.dataset.value);return;}const seat=e.target.closest("[data-seat]");if(seat&&!seat.disabled){setPick(targetField,seat.dataset.seat);return;}const b=e.target.closest("[data-action]");if(!b)return;const a=b.dataset.action,val=id=>document.getElementById(id)?.value;
+  run(()=>{switch(a){
+    case "start":{const mode=val("mode");game=new Game();window.game=game;game.start(mode);break;}
+    case "reset":reset();break;
+    case "continue":review=null;break;
+    case "buy":game.buy(Number(b.dataset.index),Number(val(`owner-${b.dataset.index}`)||0),val(`replace-${b.dataset.index}`));break;
+    case "refresh":game.refresh();break;
+    case "delete":game.deleteCard(val("delete-card"));break;
+    case "leave":game.leaveShop();break;
+    case "retry":game.retry();break;
+    case "select":selected=b.dataset.card;break;
+    case "reveal":revealed=actor();break;
+    case "hide":revealed=null;break;
+    case "play":game.play(selected,readOptions());selected=null;break;
+    case "delay":game.delayPlay();selected=null;break;
+    case "item":game.useItem(b.dataset.uid);break;
+    case "activate":game.resolve({activate:true});break;
+    case "skip":game.resolve({skip:true});break;
+    case "resolve":game.resolve({card:val("choice-card"),target:Number(val("target")),target2:Number(val("target2")),rank:Number(val("choice-rank")),suit:val("blank-suit"),turn:Number(val("pledge-turn")),give:!!document.querySelector("#give")?.checked});break;
+  }});
+});
+
+let drag=null,suppressClickUntil=0,statusTimer=null,dragFrame=null;
+function cancelDrag(){if(!drag)return;if(drag.ghost)suppressClickUntil=performance.now()+350;cancelAnimationFrame(dragFrame);drag.ghost?.remove();drag.source?.classList.remove('dragging');document.querySelectorAll('.drop-ready,.drop-over').forEach(x=>x.classList.remove('drop-ready','drop-over'));drag=null;}
+function announce(text){const status=document.getElementById('interaction-status');status.textContent=text;clearTimeout(statusTimer);statusTimer=setTimeout(()=>{status.textContent='';},4500);}
+function scrollDrag(){if(!drag?.ghost)return;const y=drag.pointerY;const speed=y<70?-16:y>innerHeight-70?16:0;if(speed)window.scrollBy(0,speed);dragFrame=requestAnimationFrame(scrollDrag);}
+function dropTarget(x,y){const el=document.elementFromPoint(x,y);return el?.closest(drag?.kind==='choice'?'[data-seat]':'[data-drop-play]');}
+function dropCard(uid,options){
+ if(game.s.phase!=='combat'||isBot()||(game.s.mode==='hotseat'&&revealed!==actor()))return;
+ if(!game.canPlay(game.s.current,game.s.players[actor()].hand.find(c=>c.uid===uid),options)){
+   selected=uid;render();announce(t("ui.dropCard.illegal"));return;
+ }
+ run(()=>{game.play(uid,options);selected=null;});announce(t("ui.dropCard.played"));
+}
+app.addEventListener('pointerdown',e=>{
+ const source=e.target.closest('[data-drag-card],[data-drag-choice]');
+ if(!source||source.disabled||e.button!==0||isBot())return;
+ drag={source,id:e.pointerId,kind:source.dataset.dragChoice?'choice':'play',uid:source.dataset.dragChoice||source.dataset.dragCard,x:e.clientX,y:e.clientY,who:actor(),phase:game.s.phase,options:selected===source.dataset.dragCard?readOptions():{},wasSelected:selected===source.dataset.dragCard};
+});
+window.addEventListener('pointermove',e=>{
+ if(!drag||drag.id!==e.pointerId)return;
+ drag.pointerY=e.clientY;
+ if(!drag.ghost&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<9)return;
+ if(!drag.ghost){
+  drag.ghost=drag.source.cloneNode(true);drag.ghost.classList.add('drag-ghost');drag.ghost.removeAttribute('id');drag.ghost.setAttribute('aria-hidden','true');document.body.append(drag.ghost);drag.source.classList.add('dragging');
+  drag.source.setPointerCapture?.(e.pointerId);dragFrame=requestAnimationFrame(scrollDrag);
+  document.querySelectorAll(drag.kind==='choice'?'[data-seat]:not(:disabled)':'[data-drop-play]').forEach(x=>x.classList.add('drop-ready'));
+ }
+ e.preventDefault();drag.ghost.style.left=`${e.clientX-70}px`;drag.ghost.style.top=`${e.clientY-45}px`;
+ document.querySelectorAll('.drop-over').forEach(x=>x.classList.remove('drop-over'));const target=dropTarget(e.clientX,e.clientY);if(target&&!target.disabled)target.classList.add('drop-over');
+},{passive:false});
+window.addEventListener('pointerup',e=>{
+ if(!drag||drag.id!==e.pointerId)return;
+ const d=drag,target=dropTarget(e.clientX,e.clientY),moved=!!d.ghost;
+ cancelDrag();if(!moved)return;suppressClickUntil=performance.now()+350;
+ if(d.who!==actor()||d.phase!==game.s.phase||!target||target.disabled){announce(t("ui.drag.cancel"));return;}
+ if(d.kind==='choice'){setPick('choice-card',d.uid);setPick(targetField,target.dataset.seat);announce(t("ui.drag.picked",{p1:Number(target.dataset.seat)+1}));return;}
+ const c=game.s.players[actor()].hand.find(c=>c.uid===d.uid);if(!c)return;
+ if(!d.wasSelected&&( ['low_self','adjust_self','adjust_two','mirror_self','change_self'].includes(c.ability)||game.hasToken(actor(),'rank')||game.hasToken(actor(),'suit')||game.s.prep[actor()]?.dye)){
+  selected=d.uid;render();announce(t("ui.drag.need_options"));document.querySelector('[data-action="play"]')?.focus();return;
+ }
+ dropCard(d.uid,d.options);
+});
+window.addEventListener('pointercancel',cancelDrag);window.addEventListener('blur',cancelDrag);
+window.addEventListener('keydown',e=>{if(e.key==='Escape'){cancelDrag();announce(t("ui.drag.cancel"));}});
+app.addEventListener('click',e=>{if(performance.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation();}},true);
+
+render();
+// 浏览器测试需要在直接驱动引擎后重绘；外部改过状态就不再停在旧的一个回合上。
+function renderDemo(){review=null;pendingReview=false;render();}
+window.renderDemo=renderDemo;
+
+return {renderDemo:renderDemo};
+})();
+})();</script></body></html>
